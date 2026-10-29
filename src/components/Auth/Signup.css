@@ -1,0 +1,16 @@
+.signup-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.signup-subtext {
+  text-align: center;
+  margin-top: 1.5rem;
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+.login-link {
+  font-weight: 600;
+  color: #2563eb;
+}

@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Manage bank company mappings in LoanSense">
+    <title>LoanSense Settings - Bank Configuration</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+    <header class="topbar">
+        <a class="brand-area admin-brand" href="/" aria-label="LoanSense home">
+            <span class="brand-logo">L</span>
+            <span class="brand-text"><strong>LoanSense</strong></span>
+        </a>
+        <a class="admin-back-link" href="/">Back to Loan Eligibility</a>
+    </header>
+
+    <main class="admin-container">
+        <section class="admin-page-heading">
+            <div>
+                <span class="admin-eyebrow">SETTINGS</span>
+                <h1>Bank Company Configuration</h1>
+                <p>Manage company, category, and FOIR settings for each bank.</p>
+            </div>
+            <button id="logoutButton" class="admin-button admin-button-secondary hidden" type="button">
+                Sign out
+            </button>
+        </section>
+
+        <section id="loginPanel" class="admin-panel login-panel">
+            <h2>Administrator access</h2>
+            <p>Enter the admin API token configured for this LoanSense server.</p>
+            <form id="loginForm" class="login-form">
+                <label for="adminToken">Admin API token</label>
+                <input id="adminToken" type="password" autocomplete="current-password" required>
+                <button class="admin-button admin-button-primary" type="submit">Sign in</button>
+            </form>
+            <div id="loginMessage" class="admin-message" role="status" aria-live="polite"></div>
+            <p class="admin-help">The token is kept in this browser tab only and is cleared when you sign out or close the tab.</p>
+        </section>
+
+        <div id="adminMessage" class="admin-message" role="status" aria-live="polite"></div>
+
+        <nav id="adminTabsNav" class="admin-tabs hidden" aria-label="Admin Sections">
+            <button id="tabBreBtn" class="admin-tab-btn active" type="button">
+                ⚡ BRE (Business Rules Engine)
+            </button>
+            <button id="tabMatrixBtn" class="admin-tab-btn" type="button" style="display: none;">
+                📊 Policy Matrix (Category & Salary → FOIR)
+            </button>
+            <button id="tabBanksBtn" class="admin-tab-btn" type="button">
+                🏢 Bank Company Mappings
+            </button>
+            <button id="tabPincodesBtn" class="admin-tab-btn" type="button">
+                📍 Serviceable Pincodes & Locations
+            </button>
+        </nav>
+
+        <!-- BRE (BUSINESS RULES ENGINE) PANEL -->
+        <section id="brePanel" class="admin-panel configuration-panel" aria-label="Business rules engine configuration">
+            <div class="bre-toolbar">
+                <div class="bre-bank-picker-wrap">
+                    <label for="breBankSelect" class="bre-label">Partner Bank</label>
+                    <div class="bre-select-container">
+                        <select id="breBankSelect" class="bre-select" aria-label="Select partner bank for BRE rules">
+                            <option value="">Loading banks...</option>
+                        </select>
+                        <span id="breRuleCount" class="list-count" style="margin-bottom:0; font-weight:600; color:#475569;"></span>
+                    </div>
+                    <button id="breAddBankButton" class="admin-button admin-button-secondary" type="button" title="Add a new partner bank to database">
+                        + Add Bank
+                    </button>
+                    <button id="breEditBankButton" class="admin-button admin-button-secondary" type="button" disabled title="Select a partner bank first to edit">
+                        ✏️ Edit Bank
+                    </button>
+                </div>
+                <div class="bre-toolbar-actions">
+                    <button id="breAddRuleButton" class="admin-button admin-button-primary" type="button" disabled title="Select a bank first to add a rule">
+                        + Add New Rule
+                    </button>
+                    <button id="breUploadRulesButton" class="admin-button admin-button-secondary" type="button">
+                        ⬆️ Upload Rules (CSV)
+                    </button>
+                    <button id="breSampleCsvButton" class="admin-button admin-button-secondary" type="button" title="Download sample CSV template for BRE rules">
+                        ⬇️ Sample CSV
+                    </button>
+                </div>
+            </div>
+
+            <div id="breNotice" class="admin-message" role="status" aria-live="polite"></div>
+
+            <div class="admin-list-wrap">
+                <table class="admin-table bre-table">
+                    <thead>
+                        <tr>
+                            <th scope="col" style="width: 130px;">Rule ID</th>
+                            <th id="breCategoryTh" scope="col" style="width: 120px;">Category</th>
+                            <th scope="col">Salary Range (Min - Max)</th>
+                            <th scope="col" style="width: 160px;">Applicable FOIR (%)</th>
+                            <th scope="col" style="width: 130px; text-align: center;">Status</th>
+                            <th scope="col" style="width: 160px; text-align: right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="breRuleRows"></tbody>
+                </table>
+                <p id="breEmpty" class="empty-list">Select a bank to view its configured rules.</p>
+            </div>
+        </section>
+
+        <!-- POLICY MATRIX PANEL (Hidden) -->
+        <section id="matrixPanel" class="admin-panel configuration-panel hidden" style="display: none !important;" aria-label="Policy matrix configuration">
+            <div class="matrix-toolbar">
+                <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                    <input id="matrixFilter" class="matrix-filter-input" type="text" placeholder="🔍 Search Category (e.g. CAT A) or Bank..." aria-label="Filter policy matrix rules">
+                    <span id="matrixCount" class="list-count" style="margin-bottom:0; font-weight:600; color:#475569;"></span>
+                </div>
+                <div class="matrix-toolbar-actions">
+                    <button id="addMatrixRuleButton" class="admin-button admin-button-primary" type="button">
+                        + Add Policy Rule
+                    </button>
+                    <button id="uploadMatrixButton" class="admin-button admin-button-secondary" type="button">
+                        ⬆️ Upload Matrix (CSV)
+                    </button>
+                    <button id="downloadMatrixSampleButton" class="admin-button admin-button-secondary" type="button">
+                        ⬇️ Sample CSV
+                    </button>
+                </div>
+            </div>
+
+            <div class="admin-list-wrap">
+                <table class="admin-table matrix-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Category</th>
+                            <th scope="col">Salary Slab</th>
+                            <th scope="col">Min Salary</th>
+                            <th scope="col">Max Salary</th>
+                            <th scope="col">FOIR %</th>
+                            <th scope="col">Multiplier</th>
+                            <th scope="col">Tenure</th>
+                            <th scope="col">Bank</th>
+                            <th scope="col">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="matrixRows"></tbody>
+                </table>
+                <p id="matrixEmpty" class="empty-list hidden">No policy matrix rules found in the database.</p>
+            </div>
+        </section>
+
+        <!-- BANK COMPANY MAPPINGS PANEL -->
+        <section id="managementPanel" class="admin-panel configuration-panel hidden" aria-label="Bank company configuration">
+            <div class="bank-picker">
+                <div class="bank-select-field">
+                    <label for="bankSelect">Bank</label>
+                    <select id="bankSelect" required>
+                        <option value="">Select a bank</option>
+                    </select>
+                </div>
+                <button id="addBankButton" class="admin-button admin-button-secondary" type="button">
+                    Add Bank
+                </button>
+                <button id="modifyBankButton" class="admin-button admin-button-secondary" type="button" disabled title="Select a bank first to modify">
+                    ✏️ Modify Bank
+                </button>
+                <button id="uploadFileButton" class="admin-button admin-button-primary" type="button">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    Upload File
+                </button>
+                <button id="addMappingButton" class="admin-button admin-button-secondary" type="button" disabled>
+                    + Add Single Mapping
+                </button>
+            </div>
+            <div class="mapping-table-toolbar" style="display:flex; justify-content:space-between; align-items:center; margin:12px 0 8px;">
+                <div id="mappingCount" class="list-count" style="margin-bottom:0;"></div>
+                <input id="mappingFilter" type="text" placeholder="🔍 Search company in this bank..." style="padding:6px 12px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px; width:260px;" aria-label="Search company mappings">
+            </div>
+            <div class="admin-list-wrap">
+                <table class="admin-table mapping-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Company Name</th>
+                            <th scope="col">Category</th>
+                            <th scope="col">FOIR %</th>
+                            <th scope="col">CC Obligation %</th>
+                            <th scope="col">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="mappingRows"></tbody>
+                </table>
+                <p id="mappingEmpty" class="empty-list">Select a bank to view its company mappings.</p>
+            </div>
+        </section>
+
+        <!-- SERVICEABLE PINCODES & LOCATIONS PANEL -->
+        <section id="pincodesPanel" class="admin-panel configuration-panel hidden" aria-label="Pincode serviceability management">
+            <div class="bre-toolbar" style="flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                    <select id="pincodeStateSelect" class="bre-select" style="max-width: 200px;" aria-label="Filter by state">
+                        <option value="all">All States / Regions</option>
+                    </select>
+                    <select id="pincodeTierSelect" class="bre-select" style="max-width: 150px;" aria-label="Filter by tier">
+                        <option value="all">All Tiers</option>
+                        <option value="TIER 1">TIER 1 (Metros)</option>
+                        <option value="TIER 2">TIER 2</option>
+                    </select>
+                    <select id="pincodeServiceableSelect" class="bre-select" style="max-width: 180px;" aria-label="Filter by serviceability">
+                        <option value="all">All Serviceability</option>
+                        <option value="1">Finnable Serviceable</option>
+                        <option value="0">Non-Serviceable</option>
+                    </select>
+                </div>
+                <div class="bre-toolbar-actions" style="display: flex; gap: 8px;">
+                    <button id="uploadPincodesButton" class="admin-button admin-button-primary" type="button">
+                        ⬆️ Upload Master Pincodes
+                    </button>
+                    <button id="uploadBankServiceabilityButton" class="admin-button admin-button-secondary" type="button" style="background:#0284c7; color:#fff; border-color:#0284c7;">
+                        🏦 Upload Bank Serviceability
+                    </button>
+                    <button id="samplePincodesCsvButton" class="admin-button admin-button-secondary" type="button" title="Download sample CSV template for pincodes">
+                        ⬇️ Sample CSV Template
+                    </button>
+                </div>
+            </div>
+
+            <div class="mapping-table-toolbar" style="display:flex; justify-content:space-between; align-items:center; margin:14px 0 8px;">
+                <div id="pincodeFilterNotice" style="font-size:12px; color:#64748b;"></div>
+                <input id="pincodeSearchInput" type="text" placeholder="🔍 Search PIN code, Location or Region..." style="padding:7px 14px; border:1px solid #cbd5e1; border-radius:6px; font-size:12.5px; width:280px;" aria-label="Search pincodes">
+            </div>
+
+            <div id="pincodesNotice" class="admin-message" role="status" aria-live="polite"></div>
+
+            <div class="admin-list-wrap">
+                <table class="admin-table pincodes-table">
+                    <thead>
+                        <tr>
+                            <th scope="col" style="width: 100px;">PIN Code</th>
+                            <th scope="col">Location Name</th>
+                            <th scope="col" style="width: 150px;">Region / District</th>
+                            <th scope="col" style="width: 140px;">State</th>
+                            <th scope="col" style="width: 110px; text-align: center;">Tier</th>
+                            <th scope="col" style="width: 200px;">Serviceable Banks</th>
+                            <th scope="col" style="width: 110px; text-align: right;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pincodeRows"></tbody>
+                </table>
+                <p id="pincodesEmpty" class="empty-list hidden">No pincodes found matching your filter criteria.</p>
+            </div>
+
+            <!-- Pagination Bar -->
+            <div id="pincodesPagination" style="display:flex; justify-content:space-between; align-items:center; margin-top:14px; padding:10px 4px;">
+                <span id="pincodesPageInfo" style="font-size:12px; color:#64748b; font-weight:500;">Page 1 of 1</span>
+                <div style="display:flex; gap:8px;">
+                    <button id="pincodesPrevBtn" class="admin-button admin-button-secondary" type="button" disabled style="padding:5px 12px; font-size:12px;">← Previous</button>
+                    <button id="pincodesNextBtn" class="admin-button admin-button-secondary" type="button" disabled style="padding:5px 12px; font-size:12px;">Next →</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <dialog id="uploadDialog" class="record-dialog upload-dialog" aria-labelledby="uploadDialogTitle">
+        <div class="dialog-form">
+            <div class="dialog-heading">
+                <h2 id="uploadDialogTitle">Upload Mappings File</h2>
+                <button id="closeUploadDialogButton" class="dialog-close" type="button" aria-label="Close dialog">×</button>
+            </div>
+            <p class="upload-intro">
+                Upload a <strong>CSV file</strong> to bulk import company FOIR and category mappings. Supports multi-bank files or mappings for the selected bank.
+            </p>
+            <div class="upload-template-row">
+                <span class="upload-template-hint">Columns: <code>Bank Name, Company, Category, FOIR, CC Obligation</code></span>
+                <button id="downloadSampleButton" class="template-download-btn" type="button">
+                    ⬇ Download Sample CSV
+                </button>
+            </div>
+
+            <div id="dropZone" class="file-drop-zone">
+                <input id="csvFileInput" type="file" accept=".csv,text/csv,text/plain" class="visually-hidden">
+                <div class="drop-zone-content">
+                    <svg class="drop-zone-icon" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="12" y1="18" x2="12" y2="12"></line>
+                        <line x1="9" y1="15" x2="15" y2="15"></line>
+                    </svg>
+                    <p class="drop-zone-main">Drop your CSV file here, or <span class="drop-zone-browse">browse</span></p>
+                    <p class="drop-zone-sub">Accepts .csv files (e.g. from Excel or Sheets)</p>
+                </div>
+            </div>
+
+            <div id="fileInfoPanel" class="file-info-panel hidden">
+                <div class="file-info-header">
+                    <div>
+                        <strong id="fileNameDisplay"></strong>
+                        <span id="fileSizeDisplay" class="file-size-badge"></span>
+                    </div>
+                    <button id="removeFileButton" class="file-remove-btn" type="button" title="Remove file">✕</button>
+                </div>
+                <div id="filePreviewSummary" class="file-summary-badge"></div>
+                <div id="filePreviewContainer" class="file-preview-wrap hidden">
+                    <table class="preview-table">
+                        <thead>
+                            <tr>
+                                <th>Bank</th>
+                                <th>Company</th>
+                                <th>Category</th>
+                                <th>FOIR %</th>
+                                <th>CC %</th>
+                            </tr>
+                        </thead>
+                        <tbody id="filePreviewRows"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="uploadDialogMessage" class="admin-message" role="alert"></div>
+
+            <div class="dialog-actions">
+                <button id="cancelUploadDialogButton" class="admin-button admin-button-secondary" type="button">Cancel</button>
+                <button id="confirmUploadButton" class="admin-button admin-button-primary" type="button" disabled>Import Mappings</button>
+            </div>
+        </div>
+    </dialog>
+
+    <dialog id="pincodeUploadDialog" class="record-dialog upload-dialog" aria-labelledby="pincodeUploadDialogTitle">
+        <div class="dialog-form">
+            <div class="dialog-heading">
+                <h2 id="pincodeUploadDialogTitle">Upload Serviceable Pincodes (CSV)</h2>
+                <button id="closePincodeUploadDialogButton" class="dialog-close" type="button" aria-label="Close dialog">×</button>
+            </div>
+            
+            <p class="upload-intro">
+                Upload a <strong>CSV file</strong> containing AP, Telangana, or other state pincodes. Columns supported: <code>pincode, city / location, district, state, tier, serviceable</code>. Existing records will be updated automatically.
+            </p>
+
+            <div class="upload-template-row">
+                <span class="upload-template-hint">Format: <code>pincode,city,district,state,tier,serviceable</code></span>
+                <button id="pincodeDownloadSampleButton" class="template-download-btn" type="button">
+                    ⬇ Download Sample Template
+                </button>
+            </div>
+
+            <div id="pincodeDropZone" class="upload-dropzone">
+                <input id="pincodeCsvFileInput" type="file" accept=".csv,text/csv" class="hidden">
+                <button id="pincodeBrowseButton" class="admin-button admin-button-secondary" type="button">Select CSV File</button>
+                <p class="dropzone-text">or drag and drop your pincodes CSV here</p>
+                <p class="dropzone-hint">Supports AP, Telangana, and All-India pincode sheets with location names.</p>
+            </div>
+
+            <div id="pincodeFileInfoPanel" class="file-info hidden">
+                <div class="file-meta">
+                    <span id="pincodeFileNameDisplay" class="file-name"></span>
+                    <span id="pincodeFileSizeDisplay" class="file-size"></span>
+                </div>
+                <button id="pincodeRemoveFileButton" class="admin-button admin-button-danger" type="button">Remove</button>
+            </div>
+
+            <div id="pincodeFilePreviewContainer" class="file-preview-wrap hidden">
+                <div id="pincodeFilePreviewSummary" class="preview-summary"></div>
+                <div class="admin-list-wrap" style="max-height: 220px; overflow-y: auto;">
+                    <table class="admin-table preview-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">PIN Code</th>
+                                <th scope="col">City / Location</th>
+                                <th scope="col">State</th>
+                                <th scope="col">Tier</th>
+                                <th scope="col">Serviceable</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pincodeFilePreviewRows"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="pincodeUploadDialogMessage" class="admin-message" role="alert"></div>
+
+            <div class="dialog-actions">
+                <button id="cancelPincodeUploadDialogButton" class="admin-button admin-button-secondary" type="button">Cancel</button>
+                <button id="confirmPincodeUploadButton" class="admin-button admin-button-primary" type="button" disabled>Import Pincodes</button>
+            </div>
+        </div>
+    </dialog>
+
+    <dialog id="mappingDialog" class="record-dialog" aria-labelledby="dialogTitle">
+        <form id="mappingForm" class="dialog-form">
+            <div class="dialog-heading">
+                <h2 id="dialogTitle">Add Company Mapping</h2>
+                <button id="closeDialogButton" class="dialog-close" type="button" aria-label="Close dialog">×</button>
+            </div>
+            <p id="dialogBankContext" class="dialog-context"></p>
+            <label for="companyName">Company Name</label>
+            <input id="companyName" name="company_name" type="text" maxlength="120" list="companyOptions" required autocomplete="off">
+            <datalist id="companyOptions"></datalist>
+            <label for="mappingCategory">Category</label>
+            <input id="mappingCategory" name="cat" type="text" maxlength="120" list="categoryOptions" autocomplete="off">
+            <datalist id="categoryOptions"></datalist>
+            <div id="mappingBreFoirHint" style="font-size:11.5px; color:#065f46; margin-top:-2px; margin-bottom:8px; display:none; background:#ecfdf5; padding:6px 10px; border-radius:6px; border:1px solid #a7f3d0;">
+                ⚡ <strong>BRE Policy Linked:</strong> <span id="mappingBreFoirText"></span>
+            </div>
+            <label for="mappingFoir">FOIR % (or override)</label>
+            <input id="mappingFoir" name="foir" type="number" min="0" max="100" step="0.01" required placeholder="e.g. 70">
+            <label for="mappingCcObligation">CC Obligation %</label>
+            <input id="mappingCcObligation" name="cc_obligation_percent" type="number" min="0" max="100" step="0.01" value="5" required>
+            <div id="dialogMessage" class="admin-message" role="alert"></div>
+            <div class="dialog-actions">
+                <button id="cancelDialogButton" class="admin-button admin-button-secondary" type="button">Cancel</button>
+                <button id="saveMappingButton" class="admin-button admin-button-primary" type="submit">Save</button>
+            </div>
+        </form>
+    </dialog>
+
+    <dialog id="bankDialog" class="record-dialog" aria-labelledby="bankDialogTitle">
+        <form id="bankForm" class="dialog-form">
+            <div class="dialog-heading">
+                <h2 id="bankDialogTitle">Add Bank</h2>
+                <button id="closeBankDialogButton" class="dialog-close" type="button" aria-label="Close dialog">×</button>
+            </div>
+            <label for="bankNameInput">Bank Name</label>
+            <input id="bankNameInput" name="name" type="text" maxlength="120" required autocomplete="off">
+            <div id="bankDialogMessage" class="admin-message" role="alert"></div>
+            <div class="dialog-actions">
+                <button id="cancelBankDialogButton" class="admin-button admin-button-secondary" type="button">Cancel</button>
+                <button id="saveBankButton" class="admin-button admin-button-primary" type="submit">Add Bank</button>
+            </div>
+        </form>
+    </dialog>
+
+    <dialog id="modifyBankDialog" class="record-dialog" aria-labelledby="modifyBankDialogTitle">
+        <form id="modifyBankForm" class="dialog-form">
+            <div class="dialog-heading">
+                <h2 id="modifyBankDialogTitle">Modify Bank & Policy Data</h2>
+                <button id="closeModifyBankDialogButton" class="dialog-close" type="button" aria-label="Close dialog">×</button>
+            </div>
+            
+            <p id="modifyBankContext" class="dialog-context" style="font-size:12px; color:#475569; margin-bottom:10px;">
+                Update bank name and default policies for the selected bank.
+            </p>
+
+            <label for="modifyBankNameInput">Bank Name <span class="req" style="color:#e11d48;">*</span></label>
+            <input id="modifyBankNameInput" name="name" type="text" maxlength="120" required autocomplete="off" placeholder="e.g. Yes Bank">
+            <small style="display:block; font-size:11px; color:#64748b; margin-top:-2px; margin-bottom:10px;">
+                Renaming will update all associated company mappings and catalog records.
+            </small>
+
+            <fieldset style="border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px; margin-bottom:12px; background:#f8fafc;">
+                <legend style="font-size:11px; font-weight:700; color:#334155; padding:0 6px;">Bank Data & Policy Overrides (Optional)</legend>
+                
+                <label for="modifyBankFoirInput" style="font-size:11.5px; margin-top:2px;">Update Bank FOIR %</label>
+                <input id="modifyBankFoirInput" name="foir" type="number" min="0" max="100" step="0.01" placeholder="Leave blank to preserve current FOIRs">
+                <small style="display:block; font-size:10.5px; color:#64748b; margin-top:-2px; margin-bottom:8px;">
+                    Enter a number (0–100) to update the FOIR % across all companies in this bank.
+                </small>
+
+                <label for="modifyBankCcInput" style="font-size:11.5px;">Update Credit Card Obligation %</label>
+                <input id="modifyBankCcInput" name="cc_obligation_percent" type="number" min="0" max="100" step="0.01" placeholder="Leave blank to preserve current (e.g. 5)">
+                <small style="display:block; font-size:10.5px; color:#64748b; margin-top:-2px;">
+                    Enter a number (0–100) to update the CC obligation % across all companies in this bank.
+                </small>
+            </fieldset>
+
+            <div id="modifyBankDialogMessage" class="admin-message" role="alert"></div>
+
+            <div class="dialog-actions" style="display:flex; justify-content:space-between; align-items:center;">
+                <button id="deleteBankButton" class="admin-button admin-button-secondary" type="button" style="color:#e11d48; border-color:#fecdd3;">
+                    🗑️ Delete Bank
+                </button>
+                <div style="display:flex; gap:8px;">
+                    <button id="cancelModifyBankDialogButton" class="admin-button admin-button-secondary" type="button">Cancel</button>
+                    <button id="saveModifyBankButton" class="admin-button admin-button-primary" type="submit">Save Changes</button>
+                </div>
+            </div>
+        </form>
+    </dialog>
+
+    <!-- POLICY MATRIX RULE ADD/EDIT DIALOG -->
+    <dialog id="matrixRuleDialog" class="record-dialog" aria-labelledby="matrixRuleDialogTitle">
+        <form id="matrixRuleForm" class="dialog-form">
+            <div class="dialog-heading">
+                <h2 id="matrixRuleDialogTitle">Add Policy Matrix Rule</h2>
+                <button id="closeMatrixRuleDialogButton" class="dialog-close" type="button" aria-label="Close dialog">×</button>
+            </div>
+            
+            <label for="ruleCategoryInput">Category <span class="req" style="color:#e11d48;">*</span></label>
+            <input id="ruleCategoryInput" name="category" type="text" maxlength="60" list="matrixCategoryDatalist" required placeholder="e.g. CAT A, CAT GO, CAT RC, EDU ALPHA" autocomplete="off">
+            <datalist id="matrixCategoryDatalist">
+                <option value="CAT A">
+                <option value="CAT B">
+                <option value="CAT C">
+                <option value="CAT D">
+                <option value="CAT GA">
+                <option value="CAT GB">
+                <option value="CAT GO">
+                <option value="CAT RA">
+                <option value="CAT RB">
+                <option value="CAT RC">
+                <option value="CAT RO">
+                <option value="CAT EDU">
+                <option value="EDU ALPHA">
+                <option value="EDU BETA">
+                <option value="SCAT A">
+                <option value="RA">
+                <option value="RB">
+                <option value="RC">
+                <option value="RO">
+                <option value="GO">
+                <option value="GA">
+                <option value="GB">
+                <option value="EDU">
+                <option value="DEFAULT">
+            </datalist>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <div>
+                    <label for="ruleMinSalaryInput">Min Salary (₹) <span class="req" style="color:#e11d48;">*</span></label>
+                    <input id="ruleMinSalaryInput" name="min_salary" type="number" min="0" step="1000" required placeholder="e.g. 25000">
+                </div>
+                <div>
+                    <label for="ruleMaxSalaryInput">Max Salary (₹) <span class="req" style="color:#e11d48;">*</span></label>
+                    <input id="ruleMaxSalaryInput" name="max_salary" type="number" min="1" step="1000" required placeholder="e.g. 50000 or 99999999">
+                </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <div>
+                    <label for="ruleFoirInput">Dynamic FOIR % <span class="req" style="color:#e11d48;">*</span></label>
+                    <input id="ruleFoirInput" name="foir_percent" type="number" min="0" max="100" step="0.01" required placeholder="e.g. 55.00">
+                </div>
+                <div>
+                    <label for="ruleMultiplierInput">Multiplier</label>
+                    <input id="ruleMultiplierInput" name="multiplier" type="number" min="0" step="0.1" value="0" placeholder="e.g. 20">
+                </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <div>
+                    <label for="ruleTenureInput">Tenure (Months)</label>
+                    <input id="ruleTenureInput" name="tenure_months" type="number" min="1" max="360" value="60">
+                </div>
+                <div>
+                    <label for="ruleBankInput">Bank Name</label>
+                    <input id="ruleBankInput" name="bank_name" type="text" value="STANDARD" placeholder="STANDARD or ALL">
+                </div>
+            </div>
+
+            <div id="matrixRuleDialogMessage" class="admin-message" role="alert"></div>
+
+            <div class="dialog-actions">
+                <button id="cancelMatrixRuleDialogButton" class="admin-button admin-button-secondary" type="button">Cancel</button>
+                <button id="saveMatrixRuleButton" class="admin-button admin-button-primary" type="submit">Save Rule</button>
+            </div>
+        </form>
+    </dialog>
+
+    <!-- POLICY MATRIX BULK UPLOAD DIALOG -->
+    <dialog id="matrixUploadDialog" class="record-dialog upload-dialog" aria-labelledby="matrixUploadDialogTitle">
+        <div class="dialog-form">
+            <div class="dialog-heading">
+                <h2 id="matrixUploadDialogTitle">Upload Policy Matrix CSV</h2>
+                <button id="closeMatrixUploadDialogButton" class="dialog-close" type="button" aria-label="Close dialog">×</button>
+            </div>
+            <p class="upload-intro">
+                Upload a <strong>CSV file</strong> to import or update Policy Matrix rules in the database.
+            </p>
+            <div class="upload-template-row">
+                <span class="upload-template-hint">Columns: <code>Category, Min Salary, Max Salary, FOIR %, Multiplier, Tenure, Bank</code></span>
+            </div>
+
+            <div id="matrixDropZone" class="file-drop-zone">
+                <input id="matrixCsvFileInput" type="file" accept=".csv,text/csv,text/plain" class="visually-hidden">
+                <div class="drop-zone-content">
+                    <svg class="drop-zone-icon" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="12" y1="18" x2="12" y2="12"></line>
+                        <line x1="9" y1="15" x2="15" y2="15"></line>
+                    </svg>
+                    <p class="drop-zone-main">Drop your Matrix CSV file here, or <span class="drop-zone-browse">browse</span></p>
+                    <p class="drop-zone-sub">Accepts .csv files</p>
+                </div>
+            </div>
+
+            <div id="matrixFileInfoPanel" class="file-info-panel hidden">
+                <div class="file-info-header">
+                    <div>
+                        <strong id="matrixFileNameDisplay"></strong>
+                        <span id="matrixFileSizeDisplay" class="file-size-badge"></span>
+                    </div>
+                    <button id="removeMatrixFileButton" class="file-remove-btn" type="button" title="Remove file">✕</button>
+                </div>
+                <div id="matrixFileSummary" class="file-summary-badge"></div>
+            </div>
+
+            <div id="matrixUploadDialogMessage" class="admin-message" role="alert"></div>
+
+            <div class="dialog-actions">
+                <button id="cancelMatrixUploadDialogButton" class="admin-button admin-button-secondary" type="button">Cancel</button>
+                <button id="confirmMatrixUploadButton" class="admin-button admin-button-primary" type="button" disabled>Import Matrix Rules</button>
+            </div>
+        </div>
+    </dialog>
+
+    <!-- BRE RULE CONFIGURATION MODAL (ADD / EDIT) -->
+    <dialog id="breRuleDialog" class="record-dialog" aria-labelledby="breRuleDialogTitle">
+        <form id="breRuleForm" class="dialog-form" novalidate>
+            <div class="dialog-heading">
+                <h2 id="breRuleDialogTitle">Add New BRE Rule</h2>
+                <button id="closeBreRuleDialogButton" class="dialog-close" type="button" aria-label="Close dialog">×</button>
+            </div>
+
+            <p id="breRuleContext" class="dialog-context" style="font-size:12px; color:#475569; margin-bottom:12px;">
+                Configure salary conditions and FOIR limit for <strong id="breModalBankName">the selected bank</strong>.
+            </p>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                <div>
+                    <label for="breRuleNameInput">Rule Name / ID <span class="req" style="color:#e11d48;">*</span></label>
+                    <input id="breRuleNameInput" name="rule_name" type="text" maxlength="60" required placeholder="e.g. Rule 1, Entry Slab">
+                </div>
+                <div>
+                    <label for="breCategoryInput">Category <span class="req" style="color:#e11d48;">*</span></label>
+                    <input id="breCategoryInput" name="category" type="text" maxlength="60" list="breCategorySuggestions" required placeholder="e.g. CAT A, CAT B, DEFAULT">
+                    <datalist id="breCategorySuggestions">
+                        <option value="CAT A">
+                        <option value="CAT B">
+                        <option value="CAT C">
+                        <option value="CAT D">
+                        <option value="CAT GA">
+                        <option value="CAT GB">
+                        <option value="CAT GO">
+                        <option value="DEFAULT">
+                        <option value="ALL">
+                    </datalist>
+                </div>
+            </div>
+
+            <label style="margin-top:12px; margin-bottom:6px; display:block;">Salary Condition Type</label>
+            <div class="bre-cond-nav" role="tablist">
+                <button type="button" id="breModeRangeBtn" class="bre-cond-pill active">Range (Min – Max)</button>
+                <button type="button" id="breModeSingleBtn" class="bre-cond-pill">Single Condition (&lt; or &gt;)</button>
+            </div>
+
+            <!-- Mode 1: Range -->
+            <div id="breRangeInputsPanel" class="bre-cond-panel">
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                    <div>
+                        <label for="breMinSalaryInput">Min Salary (₹) <span class="req" style="color:#e11d48;">*</span></label>
+                        <input id="breMinSalaryInput" name="min_salary" type="number" min="0" step="500" placeholder="0">
+                    </div>
+                    <div>
+                        <label for="breMaxSalaryInput">Max Salary (₹) <span class="req" style="color:#e11d48;">*</span></label>
+                        <input id="breMaxSalaryInput" name="max_salary" type="number" min="1" step="500" placeholder="50000">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mode 2: Single Condition (< or >) -->
+            <div id="breSingleInputsPanel" class="bre-cond-panel hidden">
+                <div style="display:grid; grid-template-columns: 130px 1fr; gap:12px;">
+                    <div>
+                        <label for="breOperatorSelect">Condition</label>
+                        <select id="breOperatorSelect" name="operator">
+                            <option value="less_than">&lt; Less than</option>
+                            <option value="greater_than">&gt; Greater than</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="breThresholdSalaryInput">Threshold Salary (₹) <span class="req" style="color:#e11d48;">*</span></label>
+                        <input id="breThresholdSalaryInput" name="threshold_salary" type="number" min="1" step="500" placeholder="50000">
+                    </div>
+                </div>
+            </div>
+
+            <label for="breFoirInput" style="margin-top:12px;">Applicable FOIR (%) <span class="req" style="color:#e11d48;">*</span></label>
+            <div style="position:relative;">
+                <input id="breFoirInput" name="foir_percent" type="number" min="0" max="100" step="0.5" required placeholder="e.g. 50">
+                <span style="position:absolute; right:12px; top:50%; transform:translateY(-50%); color:#64748b; font-weight:700; pointer-events:none;">%</span>
+            </div>
+            <small style="display:block; font-size:11px; color:#64748b; margin-top:-2px; margin-bottom:12px;">
+                Maximum Fixed Obligation to Income Ratio permitted for this bracket.
+            </small>
+
+            <div id="breRuleDialogMessage" class="admin-message" role="alert"></div>
+
+            <div class="dialog-actions">
+                <button id="cancelBreRuleDialogButton" class="admin-button admin-button-secondary" type="button">Cancel</button>
+                <button id="saveBreRuleButton" class="admin-button admin-button-primary" type="submit">Save Rule</button>
+            </div>
+        </form>
+    </dialog>
+
+    <!-- BRE DELETE CONFIRMATION MODAL -->
+    <dialog id="breDeleteDialog" class="record-dialog" aria-labelledby="breDeleteDialogTitle">
+        <div class="dialog-form">
+            <div class="dialog-heading">
+                <h2 id="breDeleteDialogTitle">Delete Rule Confirmation</h2>
+                <button id="closeBreDeleteDialogButton" class="dialog-close" type="button" aria-label="Close dialog">×</button>
+            </div>
+            <p id="breDeleteText" style="font-size:13.5px; color:#334155; margin:14px 0 18px; line-height:1.5;">
+                Are you sure you want to permanently delete this rule? This action cannot be undone.
+            </p>
+            <div id="breDeleteDialogMessage" class="admin-message" role="alert"></div>
+            <div class="dialog-actions" style="display:flex; justify-content:flex-end; gap:10px;">
+                <button id="cancelBreDeleteDialogButton" class="admin-button admin-button-secondary" type="button">Cancel</button>
+                <button id="confirmBreDeleteButton" class="admin-button admin-button-secondary" type="button" style="background:#e11d48; color:#fff; border-color:#e11d48;">
+                    Delete Rule
+                </button>
+            </div>
+        </div>
+    </dialog>
+
+    <!-- BRE RULES BULK UPLOAD DIALOG -->
+    <dialog id="breUploadDialog" class="record-dialog upload-dialog" aria-labelledby="breUploadDialogTitle">
+        <div class="dialog-form">
+            <div class="dialog-heading">
+                <h2 id="breUploadDialogTitle">Upload BRE Rules CSV</h2>
+                <button id="closeBreUploadDialogButton" class="dialog-close" type="button" aria-label="Close dialog">×</button>
+            </div>
+            <p id="breUploadBankContext" style="font-size:12.5px; color:#334155; margin-top:-6px; margin-bottom:12px; font-weight:600;"></p>
+            <p class="upload-intro">
+                Upload a <strong>CSV file</strong> to import or update Business Rules for banks.
+            </p>
+            <div class="upload-template-row">
+                <span class="upload-template-hint">Columns: <code>Bank, Category, Rule Name, Condition Type, Min Salary, Max Salary, FOIR %, Active</code></span>
+            </div>
+
+            <div id="breTargetBankOverrideRow" style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:10px 14px; margin-bottom:14px; display:flex; align-items:center; gap:10px;">
+                <input type="checkbox" id="breOverrideBankCheckbox" checked style="width:16px; height:16px; cursor:pointer;">
+                <label for="breOverrideBankCheckbox" id="breOverrideBankLabel" style="font-size:13px; font-weight:600; color:#1e40af; cursor:pointer; flex:1; margin:0;">
+                    Assign all rules to target bank: <strong id="breTargetBankName" style="color:#1d4ed8;"></strong> (overrides Bank column in CSV)
+                </label>
+            </div>
+
+            <div id="breDropZone" class="file-drop-zone">
+                <input id="breCsvFileInput" type="file" accept=".csv,text/csv,text/plain" class="visually-hidden">
+                <div class="drop-zone-content">
+                    <svg class="drop-zone-icon" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="12" y1="18" x2="12" y2="12"></line>
+                        <line x1="9" y1="15" x2="15" y2="15"></line>
+                    </svg>
+                    <p class="drop-zone-main">Drop your BRE Rules CSV file here, or <span class="drop-zone-browse">browse</span></p>
+                    <p class="drop-zone-sub">Accepts .csv files (Bank defaults to current bank if omitted)</p>
+                </div>
+            </div>
+
+            <div id="breFileInfoPanel" class="file-info-panel hidden">
+                <div class="file-info-header">
+                    <div>
+                        <strong id="breFileNameDisplay"></strong>
+                        <span id="breFileSizeDisplay" class="file-size-badge"></span>
+                    </div>
+                    <button id="removeBreFileButton" class="file-remove-btn" type="button" title="Remove file">✕</button>
+                </div>
+                <div id="breFileSummary" class="file-summary-badge"></div>
+                <div id="brePreviewContainer" class="file-preview-wrap hidden" style="max-height: 220px; overflow-y: auto; margin-top: 10px;">
+                    <table class="preview-table">
+                        <thead>
+                            <tr>
+                                <th>Bank</th>
+                                <th>Category</th>
+                                <th>Rule</th>
+                                <th>Salary Range</th>
+                                <th>FOIR %</th>
+                            </tr>
+                        </thead>
+                        <tbody id="brePreviewRows"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="breUploadDialogMessage" class="admin-message" role="alert"></div>
+
+            <div class="dialog-actions">
+                <button id="cancelBreUploadDialogButton" class="admin-button admin-button-secondary" type="button">Cancel</button>
+                <button id="confirmBreUploadButton" class="admin-button admin-button-primary" type="button" disabled>Import BRE Rules</button>
+            </div>
+        </div>
+    </dialog>
+
+    <!-- PINCODES MASTER BULK UPLOAD DIALOG -->
+    <dialog id="pincodeMasterUploadDialog" class="record-dialog upload-dialog" aria-labelledby="pincodeMasterUploadDialogTitle">
+        <div class="dialog-form">
+            <div class="dialog-heading">
+                <h2 id="pincodeMasterUploadDialogTitle">Upload Master Pincodes CSV</h2>
+                <button id="closePincodeMasterUploadDialogButton" class="dialog-close" type="button" aria-label="Close dialog">×</button>
+            </div>
+            <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:12px; margin-bottom:12px; font-size:12px; color:#1e40af; line-height:1.5;">
+                <strong>⚡ Automatic City Tier Classification:</strong><br>
+                <strong>Tier 1 Cities:</strong> Mumbai, Chennai, Delhi-NCR, Bangalore, Hyderabad, Pune, Ahmedabad, Kolkata.<br>
+                <strong>Tier 2 Cities:</strong> All other cities and locations are automatically classified as <strong>TIER 2</strong>.
+            </div>
+            <p class="upload-intro">
+                Upload a <strong>CSV file</strong> to import or update master locations and PIN codes.
+            </p>
+            <div style="margin-bottom: 14px;">
+                <label for="pincodeMasterTargetStateSelect" style="display:block; font-weight:600; font-size:12.5px; margin-bottom:4px;">
+                    Target State / Region <span style="font-weight:400; color:#64748b; font-size:11.5px;">(Optional default)</span>
+                </label>
+                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                    <select id="pincodeMasterTargetStateSelect" class="bre-select" style="flex:1; min-width:180px; width:auto; max-width:100%; padding:8px 12px; font-size:13px;">
+                        <option value="auto">Auto-detect from CSV (Default)</option>
+                    </select>
+                    <button id="pincodeMasterAddStateButton" class="admin-button admin-button-secondary" type="button" style="white-space:nowrap; padding:8px 12px; font-size:12.5px;" title="Add new state or region name">+ Add State</button>
+                    <button id="pincodeMasterEditStateButton" class="admin-button admin-button-secondary" type="button" disabled style="white-space:nowrap; padding:8px 12px; font-size:12.5px;" title="Select a state first to edit">✏️ Edit State</button>
+                    <button id="pincodeMasterDeleteStateButton" class="admin-button admin-button-secondary" type="button" disabled style="white-space:nowrap; padding:8px 12px; font-size:12.5px; color:#e11d48; border-color:#fca5a5;" title="Select a state first to delete">🗑️ Delete State</button>
+                </div>
+                <!-- Inline Add New State Field -->
+                <div id="pincodeMasterNewStateRow" class="hidden" style="margin-top:8px; display:flex; gap:8px; align-items:center; background:#f8fafc; padding:8px; border:1px solid #e2e8f0; border-radius:6px;">
+                    <input id="pincodeMasterNewStateInput" type="text" placeholder="Enter state name (e.g. Karnataka, Maharashtra)..." style="flex:1; padding:7px 12px; border:1.5px solid #3b82f6; border-radius:6px; font-size:12.5px;">
+                    <button id="pincodeMasterSaveNewStateButton" type="button" class="admin-button admin-button-primary" style="padding:7px 12px; font-size:12px; white-space:nowrap;">Save & Select</button>
+                    <button id="pincodeMasterCancelNewStateButton" type="button" class="admin-button admin-button-secondary" style="padding:7px 10px; font-size:12px;">Cancel</button>
+                </div>
+                <!-- Inline Edit State Field -->
+                <div id="pincodeMasterEditStateRow" class="hidden" style="margin-top:8px; display:flex; gap:8px; align-items:center; background:#f0f9ff; padding:8px; border:1px solid #bae6fd; border-radius:6px;">
+                    <input id="pincodeMasterEditStateInput" type="text" placeholder="Enter updated state name..." style="flex:1; padding:7px 12px; border:1.5px solid #0284c7; border-radius:6px; font-size:12.5px;">
+                    <button id="pincodeMasterUpdateStateButton" type="button" class="admin-button admin-button-primary" style="padding:7px 12px; font-size:12px; white-space:nowrap;">Update Name</button>
+                    <button id="pincodeMasterCancelEditStateButton" type="button" class="admin-button admin-button-secondary" style="padding:7px 10px; font-size:12px;">Cancel</button>
+                </div>
+                <small style="display:block; font-size:11px; color:#64748b; margin-top:3px;">
+                    If the CSV does not contain a state column, imported PIN codes will be assigned to this state.
+                </small>
+            </div>
+
+            <div class="upload-template-row">
+                <span class="upload-template-hint">Expected Columns: <code>pincode, location, region, state</code></span>
+                <button id="pincodeMasterDownloadSampleButton" class="admin-button admin-button-secondary" type="button" style="padding:4px 10px; font-size:11.5px;">⬇️ Download Sample CSV</button>
+            </div>
+
+            <div id="pincodeMasterDropZone" class="file-drop-zone">
+                <input id="pincodeMasterCsvFileInput" type="file" accept=".csv,text/csv,text/plain" class="visually-hidden">
+                <div class="drop-zone-content">
+                    <svg class="drop-zone-icon" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="12" y1="18" x2="12" y2="12"></line>
+                        <line x1="9" y1="15" x2="15" y2="15"></line>
+                    </svg>
+                    <p class="drop-zone-main">Drop your Master Pincodes CSV file here, or <span class="drop-zone-browse" id="pincodeMasterBrowseButton">browse</span></p>
+                    <p class="drop-zone-sub">Accepts .csv files (e.g. AP, Telangana, Karnataka, etc.)</p>
+                </div>
+            </div>
+
+            <div id="pincodeMasterFileInfoPanel" class="file-info-panel hidden">
+                <div class="file-info-header">
+                    <div>
+                        <strong id="pincodeMasterFileNameDisplay"></strong>
+                        <span id="pincodeMasterFileSizeDisplay" class="file-size-badge"></span>
+                    </div>
+                    <button id="pincodeMasterRemoveFileButton" class="file-remove-btn" type="button" title="Remove file">✕</button>
+                </div>
+                <div id="pincodeMasterFileSummary" class="file-summary-badge"></div>
+                <div id="pincodeMasterPreviewContainer" class="file-preview-wrap hidden" style="max-height: 200px; overflow-y: auto; margin-top: 10px;">
+                    <table class="preview-table">
+                        <thead>
+                            <tr>
+                                <th>PIN</th>
+                                <th>Location</th>
+                                <th>Region</th>
+                                <th>State</th>
+                                <th>Auto Tier</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pincodeMasterPreviewRows"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="pincodeMasterUploadDialogMessage" class="admin-message" role="alert"></div>
+
+            <div class="dialog-actions">
+                <button id="cancelPincodeMasterUploadDialogButton" class="admin-button admin-button-secondary" type="button">Cancel</button>
+                <button id="confirmPincodeMasterUploadButton" class="admin-button admin-button-primary" type="button" disabled>Import Master Pincodes</button>
+            </div>
+        </div>
+    </dialog>
+
+    <!-- BANK SERVICEABILITY BULK UPLOAD DIALOG -->
+    <dialog id="pincodeBankUploadDialog" class="record-dialog upload-dialog" aria-labelledby="pincodeBankUploadDialogTitle">
+        <div class="dialog-form">
+            <div class="dialog-heading">
+                <h2 id="pincodeBankUploadDialogTitle">Upload Bank Serviceable Pincodes</h2>
+                <button id="closePincodeBankUploadDialogButton" class="dialog-close" type="button" aria-label="Close dialog">×</button>
+            </div>
+            
+            <div style="margin-bottom: 14px;">
+                <label for="bankServiceabilityTargetSelect" style="display:block; font-weight:600; font-size:12.5px; margin-bottom:4px;">
+                    Target Bank / Lender <span class="req" style="color:#e11d48;">*</span>
+                </label>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <select id="bankServiceabilityTargetSelect" class="bre-select" style="flex:1; width:auto; max-width:100%; padding:8px 12px; font-size:13px;" required>
+                        <option value="">Select a Bank...</option>
+                        <option value="FINNABLE">FINNABLE</option>
+                        <option value="INCRID">INCRID</option>
+                        <option value="POONAWALLA FINCORP">POONAWALLA FINCORP</option>
+                        <option value="HDFC BANK">HDFC BANK</option>
+                        <option value="ICICI BANK">ICICI BANK</option>
+                        <option value="AXIS BANK">AXIS BANK</option>
+                        <option value="KOTAK MAHINDRA BANK">KOTAK MAHINDRA BANK</option>
+                        <option value="SBI">STATE BANK OF INDIA (SBI)</option>
+                    </select>
+                    <button id="pincodeBankAddBankButton" class="admin-button admin-button-secondary" type="button" style="white-space:nowrap; padding:8px 12px; font-size:12.5px;" title="Add new bank or lender name">+ Add Bank</button>
+                </div>
+                <!-- Inline Add New Bank Field -->
+                <div id="pincodeBankNewBankRow" class="hidden" style="margin-top:8px; display:flex; gap:8px; align-items:center; background:#f8fafc; padding:8px; border:1px solid #e2e8f0; border-radius:6px;">
+                    <input id="pincodeBankNewBankInput" type="text" placeholder="Enter bank name (e.g. YES BANK, IDFC FIRST)..." style="flex:1; padding:7px 12px; border:1.5px solid #3b82f6; border-radius:6px; font-size:12.5px;">
+                    <button id="pincodeBankSaveNewBankButton" type="button" class="admin-button admin-button-primary" style="padding:7px 12px; font-size:12px; white-space:nowrap;">Save & Select</button>
+                    <button id="pincodeBankCancelNewBankButton" type="button" class="admin-button admin-button-secondary" style="padding:7px 10px; font-size:12px;">Cancel</button>
+                </div>
+                <small style="display:block; font-size:11px; color:#64748b; margin-top:3px;">
+                    Borrowers with matching PIN codes will see this bank. Other PIN codes will hide this bank.
+                </small>
+            </div>
+
+            <div class="upload-template-row">
+                <span class="upload-template-hint">Expected Columns: <code>pincode, serviceable (optional: 1 or 0)</code></span>
+                <button id="pincodeBankDownloadSampleButton" class="admin-button admin-button-secondary" type="button" style="padding:4px 10px; font-size:11.5px;">⬇️ Sample CSV</button>
+            </div>
+
+            <div id="pincodeBankDropZone" class="file-drop-zone">
+                <input id="pincodeBankCsvFileInput" type="file" accept=".csv,text/csv,text/plain" class="visually-hidden">
+                <div class="drop-zone-content">
+                    <svg class="drop-zone-icon" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="12" y1="18" x2="12" y2="12"></line>
+                        <line x1="9" y1="15" x2="15" y2="15"></line>
+                    </svg>
+                    <p class="drop-zone-main">Drop your Bank Serviceability CSV here, or <span class="drop-zone-browse" id="pincodeBankBrowseButton">browse</span></p>
+                    <p class="drop-zone-sub">Accepts .csv files</p>
+                </div>
+            </div>
+
+            <div id="pincodeBankFileInfoPanel" class="file-info-panel hidden">
+                <div class="file-info-header">
+                    <div>
+                        <strong id="pincodeBankFileNameDisplay"></strong>
+                        <span id="pincodeBankFileSizeDisplay" class="file-size-badge"></span>
+                    </div>
+                    <button id="pincodeBankRemoveFileButton" class="file-remove-btn" type="button" title="Remove file">✕</button>
+                </div>
+                <div id="pincodeBankFileSummary" class="file-summary-badge"></div>
+            </div>
+
+            <div id="pincodeBankUploadDialogMessage" class="admin-message" role="alert"></div>
+
+            <div class="dialog-actions">
+                <button id="cancelPincodeBankUploadDialogButton" class="admin-button admin-button-secondary" type="button">Cancel</button>
+                <button id="confirmPincodeBankUploadButton" class="admin-button admin-button-primary" type="button" disabled>Import Bank Serviceability</button>
+            </div>
+        </div>
+    </dialog>
+
+    <!-- ADD STATE DIALOG -->
+    <dialog id="pincodeAddStateDialog" class="admin-dialog" aria-labelledby="addStateDialogTitle">
+        <div class="admin-dialog-card" style="max-width: 480px;">
+            <div class="admin-dialog-header">
+                <div>
+                    <span class="dialog-eyebrow">GEOGRAPHY MANAGEMENT</span>
+                    <h2 id="addStateDialogTitle">Add New State</h2>
+                </div>
+                <button id="closePincodeAddStateDialogBtn" class="dialog-close-btn" type="button" aria-label="Close dialog">✕</button>
+            </div>
+
+            <form id="pincodeAddStateForm" class="admin-dialog-form">
+                <div class="dialog-form-grid" style="grid-template-columns: 1fr;">
+                    <div class="dialog-field-group">
+                        <label for="newPincodeStateName">State / Region Name <span style="color:#ef4444;">*</span></label>
+                        <input id="newPincodeStateName" type="text" placeholder="e.g. Andhra Pradesh, Karnataka, Kerala" required>
+                    </div>
+
+                    <div class="dialog-field-group">
+                        <label for="newPincodePin">Initial PIN Code <span style="color:#ef4444;">*</span></label>
+                        <input id="newPincodePin" type="text" maxlength="6" placeholder="e.g. 520001" required>
+                        <small style="color:#64748b; font-size:11px;">A 6-digit PIN code to initialize this state's coverage.</small>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                        <div class="dialog-field-group">
+                            <label for="newPincodeLocation">City / Location</label>
+                            <input id="newPincodeLocation" type="text" placeholder="e.g. Amaravati">
+                        </div>
+                        <div class="dialog-field-group">
+                            <label for="newPincodeRegion">Region / District</label>
+                            <input id="newPincodeRegion" type="text" placeholder="e.g. Guntur">
+                        </div>
+                    </div>
+
+                    <div class="dialog-field-group">
+                        <label for="newPincodeTier">Default Tier Classification</label>
+                        <select id="newPincodeTier" class="dialog-input">
+                            <option value="TIER 2" selected>TIER 2 (Default for Non-Metro States & Districts)</option>
+                            <option value="TIER 1">TIER 1 (Metros: Mumbai, Delhi, Hyd, Blr, etc.)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="pincodeAddStateDialogMessage" class="admin-message" role="alert"></div>
+
+                <div class="dialog-actions">
+                    <button id="cancelPincodeAddStateDialogButton" class="admin-button admin-button-secondary" type="button">Cancel</button>
+                    <button id="confirmPincodeAddStateButton" class="admin-button admin-button-primary" type="submit">Save State</button>
+                </div>
+            </form>
+        </div>
+    </dialog>
+
+    <!-- EDIT STATE DIALOG -->
+    <dialog id="pincodeEditStateDialog" class="admin-dialog" aria-labelledby="editStateDialogTitle">
+        <div class="admin-dialog-card" style="max-width: 480px;">
+            <div class="admin-dialog-header">
+                <div>
+                    <span class="dialog-eyebrow">GEOGRAPHY MANAGEMENT</span>
+                    <h2 id="editStateDialogTitle">Edit State: <span id="editStateCurrentName" style="color:#0284c7;"></span></h2>
+                </div>
+                <button id="closePincodeEditStateDialogBtn" class="dialog-close-btn" type="button" aria-label="Close dialog">✕</button>
+            </div>
+
+            <form id="pincodeEditStateForm" class="admin-dialog-form">
+                <div class="dialog-form-grid" style="grid-template-columns: 1fr;">
+                    <div class="dialog-field-group">
+                        <label for="editStateNameInput">Rename State Across All PIN Codes</label>
+                        <input id="editStateNameInput" type="text" placeholder="e.g. Andhra Pradesh">
+                    </div>
+
+                    <div class="dialog-field-group">
+                        <label for="editStateTierSelect">Bulk Update Tier for All PIN Codes in this State</label>
+                        <select id="editStateTierSelect" class="dialog-input">
+                            <option value="">Keep existing individual tiers</option>
+                            <option value="TIER 1">Set all PINs in this state to TIER 1</option>
+                            <option value="TIER 2">Set all PINs in this state to TIER 2</option>
+                        </select>
+                    </div>
+
+                    <div style="background:#fef2f2; border:1px solid #fecaca; border-radius:8px; padding:12px; margin-top:4px;">
+                        <div style="font-weight:600; color:#991b1b; font-size:12.5px; margin-bottom:4px;">⚠️ Danger Zone</div>
+                        <p style="font-size:11.5px; color:#7f1d1d; margin:0 0 8px;">Delete all master PIN codes and bank coverage for this state from the database.</p>
+                        <button id="deleteStatePincodesButton" class="admin-button" type="button" style="background:#dc2626; color:#fff; border:none; padding:6px 12px; font-size:12px;">
+                            🗑️ Delete All PIN Codes for this State
+                        </button>
+                    </div>
+                </div>
+
+                <div id="pincodeEditStateDialogMessage" class="admin-message" role="alert"></div>
+
+                <div class="dialog-actions">
+                    <button id="cancelPincodeEditStateDialogButton" class="admin-button admin-button-secondary" type="button">Cancel</button>
+                    <button id="confirmPincodeEditStateButton" class="admin-button admin-button-primary" type="submit">Update State</button>
+                </div>
+            </form>
+        </div>
+    </dialog>
+
+    <!-- EDIT INDIVIDUAL PINCODE DIALOG -->
+    <dialog id="pincodeEditDialog" class="admin-dialog" aria-labelledby="editPincodeDialogTitle">
+        <div class="admin-dialog-card" style="max-width: 480px;">
+            <div class="admin-dialog-header">
+                <div>
+                    <span class="dialog-eyebrow">LOCATION DETAILS</span>
+                    <h2 id="editPincodeDialogTitle">Edit PIN: <span id="editPinPincodeDisplay" style="color:#0284c7; font-family:monospace;"></span></h2>
+                </div>
+                <button id="closePincodeEditDialogBtn" class="dialog-close-btn" type="button" aria-label="Close dialog">✕</button>
+            </div>
+
+            <form id="pincodeEditForm" class="admin-dialog-form">
+                <input type="hidden" id="editPinIdInput">
+                <div class="dialog-form-grid" style="grid-template-columns: 1fr;">
+                    <div class="dialog-field-group">
+                        <label for="editPinLocationInput">Location Name</label>
+                        <input id="editPinLocationInput" type="text" required>
+                    </div>
+
+                    <div class="dialog-field-group">
+                        <label for="editPinRegionInput">Region / District</label>
+                        <input id="editPinRegionInput" type="text">
+                    </div>
+
+                    <div class="dialog-field-group">
+                        <label for="editPinStateInput">State</label>
+                        <input id="editPinStateInput" type="text" required>
+                    </div>
+
+                    <div class="dialog-field-group">
+                        <label for="editPinTierSelect">Tier</label>
+                        <select id="editPinTierSelect" class="dialog-input">
+                            <option value="TIER 1">TIER 1 (Metros)</option>
+                            <option value="TIER 2">TIER 2</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="pincodeEditDialogMessage" class="admin-message" role="alert"></div>
+
+                <div class="dialog-actions">
+                    <button id="cancelPincodeEditDialogButton" class="admin-button admin-button-secondary" type="button">Cancel</button>
+                    <button id="confirmPincodeEditButton" class="admin-button admin-button-primary" type="submit">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </dialog>
+
+    <script src="/js/config.js"></script>
+    <script src="/js/admin.js?v=20261028_06" defer></script>
+</body>
+</html>

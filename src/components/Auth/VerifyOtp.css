@@ -1,0 +1,26 @@
+.verify-otp-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.otp-actions-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1.5rem;
+}
+
+.resend-otp-btn,
+.change-mobile-btn {
+  background: none;
+  border: none;
+  font-size: 0.85rem;
+  color: #2563eb;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.resend-otp-btn:disabled {
+  color: #94a3b8;
+  cursor: not-allowed;
+}

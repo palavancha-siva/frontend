@@ -1,0 +1,51 @@
+.application-progress-container {
+  margin: 1.5rem 0;
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.app-ref {
+  font-size: 0.8rem;
+  color: #64748b;
+  font-family: monospace;
+}
+
+.progress-header h3 {
+  font-size: 1.3rem;
+  color: #0f172a;
+}
+
+.app-loan-badge {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #2563eb;
+  background-color: #eff6ff;
+  padding: 0.35rem 0.75rem;
+  border-radius: 8px;
+}
+
+.progress-content-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+
+.progress-left h4,
+.progress-right h4 {
+  font-size: 1rem;
+  color: #334155;
+  margin-bottom: 1.25rem;
+}
+
+@media (max-width: 768px) {
+  .progress-content-split {
+    grid-template-columns: 1fr;
+  }
+}

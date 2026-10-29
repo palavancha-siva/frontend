@@ -1,0 +1,30 @@
+.document-files-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.file-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.65rem;
+  background-color: #f1f5f9;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  color: #334155;
+}
+
+.file-icon {
+  font-size: 0.85rem;
+}
+
+.file-name {
+  font-weight: 500;
+}
+
+.file-size {
+  color: #64748b;
+  font-size: 0.75rem;
+}

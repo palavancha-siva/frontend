@@ -1,0 +1,16 @@
+.credit-score-fetch-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.credit-score-fetch-form h3 {
+  font-size: 1.25rem;
+  color: #0f172a;
+  margin-bottom: 0.25rem;
+}
+
+.credit-score-desc {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-bottom: 1.25rem;
+}

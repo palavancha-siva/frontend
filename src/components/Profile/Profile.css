@@ -1,0 +1,18 @@
+.profile-page-container {
+  padding: 2.5rem 1rem;
+}
+
+.profile-hero-header {
+  margin-bottom: 2rem;
+}
+
+.profile-hero-header h2 {
+  font-size: 1.6rem;
+  color: #0f172a;
+}
+
+.profile-hero-header p {
+  color: #64748b;
+  font-size: 0.95rem;
+  margin-top: 0.25rem;
+}

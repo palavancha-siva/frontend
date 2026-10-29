@@ -1,0 +1,89 @@
+.application-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 1.25rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.application-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.card-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.app-id {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-family: monospace;
+}
+
+.app-bank-title {
+  font-size: 1.1rem;
+  color: #0f172a;
+  font-weight: 700;
+  margin-top: 0.1rem;
+}
+
+.app-type {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.card-amount-row {
+  margin-bottom: 0.75rem;
+}
+
+.amount-label {
+  display: block;
+  font-size: 0.75rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.amount-value {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #2563eb;
+}
+
+.progress-bar-track {
+  height: 6px;
+  background-color: #f1f5f9;
+  border-radius: 9999px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background-color: #2563eb;
+  border-radius: 9999px;
+  transition: width 0.4s ease;
+}
+
+.card-footer-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+  border-top: 1px solid #f1f5f9;
+  padding-top: 0.75rem;
+}
+
+.applied-date {
+  color: #64748b;
+}
+
+.view-details-link {
+  font-weight: 600;
+  color: #2563eb;
+}

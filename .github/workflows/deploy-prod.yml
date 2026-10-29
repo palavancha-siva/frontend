@@ -1,0 +1,41 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci || npm install
+
+      - name: Run Lint
+        run: npm run lint
+
+      - name: Run Unit Tests
+        run: npm run test
+
+      - name: Build Webapp
+        run: npm run build
+        env:
+          NODE_ENV: production
+          REACT_APP_API_URL: ${{ secrets.PROD_API_URL }}
+
+      - name: Build Docker Image
+        run: docker build -t fin_user_webapp:latest .
+
+      - name: Deploy to Production Cluster
+        run: echo "Deploying fin_user_webapp to Production cluster..."

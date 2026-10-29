@@ -1,0 +1,33 @@
+.mobile-input-wrapper {
+  display: flex;
+  align-items: center;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background-color: #ffffff;
+  overflow: hidden;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.mobile-input-wrapper:focus-within {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.mobile-prefix {
+  padding: 0.65rem 0.75rem;
+  background-color: #f1f5f9;
+  border-right: 1px solid #cbd5e1;
+  color: #475569;
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+.mobile-input-control {
+  flex: 1;
+  border: none;
+  outline: none;
+  padding: 0.65rem 0.85rem;
+  font-size: 0.95rem;
+  color: #0f172a;
+  letter-spacing: 0.5px;
+}

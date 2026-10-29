@@ -1,0 +1,22 @@
+.my-documents-section {
+  padding: 1rem 0;
+}
+
+.my-docs-header {
+  margin-bottom: 1.5rem;
+}
+
+.my-docs-header h4 {
+  font-size: 1.15rem;
+  color: #0f172a;
+}
+
+.my-docs-header p {
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.docs-list {
+  display: flex;
+  flex-direction: column;
+}

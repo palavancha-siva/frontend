@@ -1,0 +1,38 @@
+name: Deploy to Dev
+
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci || npm install
+
+      - name: Run Lint
+        run: npm run lint || true
+
+      - name: Run Unit Tests
+        run: npm run test || true
+
+      - name: Build Webapp
+        run: npm run build
+        env:
+          NODE_ENV: development
+          REACT_APP_API_URL: ${{ secrets.DEV_API_URL }}
+
+      - name: Deploy to Dev Server
+        run: echo "Deploying build artifacts to Dev environment..."

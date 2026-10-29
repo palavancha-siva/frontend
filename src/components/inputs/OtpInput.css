@@ -1,0 +1,40 @@
+.otp-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.otp-boxes-row {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.otp-digit-box {
+  width: 48px;
+  height: 52px;
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 8px;
+  background-color: #f8fafc;
+  color: #0f172a;
+  outline: none;
+  transition: all 0.15s ease;
+}
+
+.otp-digit-box:focus {
+  border-color: #2563eb;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.otp-digit-box.otp-error {
+  border-color: #ef4444;
+}
+
+.text-center {
+  text-align: center;
+}

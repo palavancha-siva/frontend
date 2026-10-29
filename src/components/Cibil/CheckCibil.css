@@ -1,0 +1,31 @@
+.check-cibil-page {
+  padding: 3rem 1rem;
+}
+
+.check-cibil-card {
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.cibil-card-heading {
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 1.25rem;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.cibil-card-heading h2 {
+  font-size: 1.5rem;
+  color: #0f172a;
+}
+
+.cibil-card-heading p {
+  font-size: 0.9rem;
+  color: #64748b;
+  margin-top: 0.35rem;
+}
+
+.report-action-center {
+  text-align: center;
+  margin-top: 2rem;
+}

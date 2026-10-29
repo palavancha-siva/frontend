@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="LoanSense - Institutional Retail Lending & Multi-Bank FOIR Credit Underwriting Engine">
+    <title>LoanSense | Retail Credit Underwriting & FOIR Engine</title>
+
+    <!-- Google Fonts for modern banking & fintech typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+        rel="stylesheet">
+
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+
+<body>
+    <!-- React Root Container for fin_user_webapp -->
+    <div id="root"></div>
+
+
+    <!-- TOPBAR / FINANCIAL HEADER -->
+    <header class="topbar">
+        <div class="topbar-left">
+            <div class="brand-area">
+                <div class="brand-logo" aria-hidden="true">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                    </svg>
+                </div>
+                <div class="brand-text">
+                    <div class="brand-title-wrap">
+                        <strong>LoanSense</strong>
+                        <span class="brand-edition">INSTITUTIONAL</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="topbar-actions">
+            <!-- Database Connection Badge -->
+            <div class="header-status" id="dbStatusBadge">
+                <span class="status-dot"></span>
+                <span id="dbStatusText">PostgreSQL Online</span>
+            </div>
+
+            <!-- Credit Desk Operator Chip -->
+            <div class="operator-chip">
+                <div class="operator-avatar">RM</div>
+                <div class="operator-details">
+                    <span class="operator-name">Credit Desk</span>
+                    <span class="operator-role">Underwriter</span>
+                </div>
+            </div>
+
+            <!-- Admin Portal Link -->
+            <a class="admin-link" href="/admin" id="adminPortalLink">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path
+                        d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0-.33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+                    </path>
+                </svg>
+                <span>Policy Admin</span>
+            </a>
+        </div>
+    </header>
+
+    <!-- MAIN APP SHELL -->
+    <main class="app-shell">
+        <div class="dashboard-grid">
+
+            <!-- LEFT COLUMN: STEP-BY-STEP UNDERWRITING ENGINE -->
+            <div class="left-column">
+
+                <!-- STEP 1: Applicant Profile & Lender Selection -->
+                <section class="step-card step-1-card" id="step1Card">
+                    <div class="step-header">
+                        <div class="step-badge step-1-badge">
+                            <span class="badge-num">1</span>
+                            <span class="badge-title">BORROWER & EMPLOYER</span>
+                        </div>
+                        <div class="step-title-wrap">
+                            <h2>Applicant Profile & Corporate Verification</h2>
+                        </div>
+                    </div>
+
+                    <!-- Step 1 Inputs -->
+                    <div class="step1-inputs-grid">
+                        <!-- Borrower Name -->
+                        <div class="form-group name-group">
+                            <label for="name">
+                                Full Legal Name <span class="req">*</span>
+                            </label>
+                            <div class="input-icon-wrap">
+                                <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                    <circle cx="12" cy="7" r="4"></circle>
+                                </svg>
+                                <input id="name" type="text" autocomplete="off">
+                            </div>
+                            <span class="field-error" id="nameError"></span>
+                        </div>
+
+                        <!-- Employer / Corporate Entity with Autocomplete -->
+                        <div class="form-group company-group">
+                            <label for="company_name">
+                                Current Employer / Corporate Entity <span class="req">*</span>
+                            </label>
+                            <div class="autocomplete-wrapper">
+                                <div class="input-icon-wrap">
+                                    <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                        stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                                        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                                    </svg>
+                                    <input id="company_name" type="text" autocomplete="off" role="combobox"
+                                        aria-autocomplete="list" aria-expanded="false"
+                                        aria-controls="companySuggestions">
+                                </div>
+                                <span id="companyLoading" class="spinner-icon hidden" aria-hidden="true"></span>
+                                <div id="companySuggestions" class="suggestions-dropdown hidden" role="listbox"></div>
+                            </div>
+                            <span class="field-error" id="companyError"></span>
+                        </div>
+
+                        <!-- Monthly Net Salary -->
+                        <div class="form-group salary-group">
+                            <label for="monthly_income">
+                                Net Monthly In-Hand Salary (₹) <span class="req">*</span>
+                            </label>
+                            <div class="input-with-symbol">
+                                <span class="currency-symbol">₹</span>
+                                <input id="monthly_income" class="no-spinner" type="number" min="1" step="1"
+                                    autocomplete="off">
+                            </div>
+                            <span class="field-error" id="salaryError"></span>
+                        </div>
+
+                        <!-- Residence PIN Code (Serviceability & City Tier Verification) -->
+                        <div class="form-group pincode-group">
+                            <label for="pincode">
+                                Residence PIN Code <span class="req">*</span>
+                            </label>
+                            <div class="input-icon-wrap">
+                                <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                                    <circle cx="12" cy="10" r="3"></circle>
+                                </svg>
+                                <input id="pincode" type="text" maxlength="6"
+                                    placeholder="e.g. 500001 (Hyd) or 520001 (AP)" autocomplete="off">
+                                <span id="pincodeLoading" class="spinner-icon hidden" aria-hidden="true"></span>
+                            </div>
+                            <div id="pincodeStatusBadge" class="pincode-badge hidden"></div>
+                            <span class="field-error" id="pincodeError"></span>
+                        </div>
+
+                        <!-- Active Home Loan Toggle (Displayed beside salary ONLY after clicking ICICI Bank) -->
+                        <div class="form-group home-loan-group hidden" id="iciciHomeLoanPanel">
+                            <label for="homeLoanToggleGroup">
+                                Paying Home Loan? <span class="tag-icici-rule">ICICI</span>
+                            </label>
+                            <div class="toggle-btn-group compact-toggle" id="homeLoanToggleGroup" role="group"
+                                aria-label="ICICI Home Loan EMI Status">
+                                <button type="button" class="btn-toggle active" id="homeLoanNoBtn" data-value="false">
+                                    <span class="toggle-icon">✕</span> No
+                                </button>
+                                <button type="button" class="btn-toggle" id="homeLoanYesBtn" data-value="true">
+                                    <span class="toggle-icon">✓</span> Yes
+                                </button>
+                            </div>
+                            <span class="field-hint" id="iciciFieldHint">BRE Policy Evaluation</span>
+                        </div>
+                    </div>
+
+                    <!-- LENDERS MATRIX SECTION -->
+                    <div class="lenders-section" id="lendersSection">
+                        <div class="lenders-header">
+                            <div class="lenders-title">
+                                <div class="title-with-icon">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M3 21h18M3 10h18M5 10v11M19 10v11M9 10v11M15 10v11M12 2l10 5H2l10-5z">
+                                        </path>
+                                    </svg>
+                                    <h3>Eligible Commercial Lenders</h3>
+                                </div>
+                                <span class="badge-pill" id="lenderCountBadge">Awaiting Input</span>
+                            </div>
+                            <p class="lenders-hint" id="lenderSelectionHint">Select one lender to proceed with facility
+                                underwriting</p>
+                        </div>
+
+                        <!-- Guidance Empty State -->
+                        <div class="lenders-placeholder" id="emptyLendersPrompt">
+                            <div class="placeholder-icon">
+                                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M3 21h18M3 10h18M5 10v11M19 10v11M9 10v11M15 10v11M12 2l10 5H2l10-5z">
+                                    </path>
+                                </svg>
+                            </div>
+                            <div class="placeholder-text">
+                                <strong>Awaiting Salary & Company Input</strong>
+                                <span>Enter net monthly salary and select employer above to query bank policy matrices
+                                    and match eligible lenders dynamically.</span>
+                            </div>
+                        </div>
+
+                        <!-- Loading State -->
+                        <div class="lenders-loading hidden" id="lendersLoading">
+                            <div class="inline-spinner"></div>
+                            <span>Querying PostgreSQL policy matrix for bank classifications & FOIR tiers...</span>
+                        </div>
+
+                        <!-- Empty State (No lenders found) -->
+                        <div class="lenders-empty hidden" id="lendersNotFound">
+                            <div class="empty-icon-box">⚠️</div>
+                            <div class="empty-text">
+                                <strong id="lendersNotFoundTitle">No Eligible Lenders Found</strong>
+                                <span id="lendersNotFoundMessage">No active bank mappings match this company and salary
+                                    tier.</span>
+                            </div>
+                        </div>
+
+                        <!-- Lenders Table Container -->
+                        <div class="table-wrap hidden" id="lendersTableContainer">
+                            <table class="lenders-table" id="lendersTable">
+                                <thead>
+                                    <tr>
+                                        <th class="col-select">Select</th>
+                                        <th class="col-bank">Lending Institution</th>
+                                        <th class="col-cat">Employer Tier</th>
+                                        <th class="col-foir">Permissible FOIR</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="lendersTableBody">
+                                    <!-- Populated dynamically via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <span class="field-error" id="lenderSelectError"></span>
+                    </div>
+                </section>
+
+                <!-- STEP 2: Facility Parameters & Loan Terms -->
+                <section class="step-card step-section disabled" id="step2Card">
+                    <div class="step-header">
+                        <div class="step-badge" id="step2Badge">
+                            <span class="badge-num">2</span>
+                            <span class="badge-title">FACILITY TERMS</span>
+                        </div>
+                        <div class="step-title-wrap">
+                            <h2>Proposed Facility Parameters</h2>
+                            <p class="step-subtitle">Configure interest rate benchmark and desired repayment tenure</p>
+                        </div>
+                        <span class="step-lock-tag" id="step2Lock">Locked</span>
+                    </div>
+
+                    <div class="inputs-row two-col">
+                        <!-- Proposed Interest Rate -->
+                        <div class="form-group">
+                            <div class="label-with-hint">
+                                <label for="proposed_rate">
+                                    Annual Interest Rate (% p.a.) <span class="req">*</span>
+                                </label>
+                                <span class="input-benchmark-tag">Benchmarked</span>
+                            </div>
+                            <div class="input-with-symbol right-symbol">
+                                <input id="proposed_rate" class="no-spinner" type="number" min="0.1" max="50"
+                                    step="0.05" disabled autocomplete="off">
+                                <span class="rate-symbol">% p.a.</span>
+                            </div>
+                            <span class="field-error" id="rateError"></span>
+                        </div>
+
+                        <!-- Loan Tenure (Months) -->
+                        <div class="form-group">
+                            <div class="label-with-hint">
+                                <label for="loan_tenure_months">
+                                    Facility Tenor (Months) <span class="req">*</span>
+                                </label>
+                                <span class="input-benchmark-tag hidden" id="tenureYearsPreview"></span>
+                            </div>
+                            <div class="input-with-symbol right-symbol">
+                                <input id="loan_tenure_months" class="no-spinner" type="number" min="1" max="360"
+                                    step="1" disabled autocomplete="off">
+                                <span class="tenure-symbol">Mo</span>
+                            </div>
+                            <span class="field-error" id="tenureError"></span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- STEP 3: Debt Obligations Profiling -->
+                <section class="step-card step-section disabled" id="step3Card">
+                    <div class="step-header">
+                        <div class="step-badge" id="step3Badge">
+                            <span class="badge-num">3</span>
+                            <span class="badge-title">DEBT OBLIGATIONS</span>
+                        </div>
+                        <div class="step-title-wrap">
+                            <h2>Existing Debt & Liability Profiling</h2>
+                        </div>
+                        <span class="step-lock-tag" id="step3Lock">Locked</span>
+                    </div>
+
+                    <div class="inputs-row two-col">
+                        <!-- Credit Card Outstanding Section -->
+                        <div class="obligation-col" id="ccCol">
+                            <div class="obligation-header">
+                                <label class="obligation-title">Credit Card Outstanding</label>
+                                <div class="obligation-header-actions">
+                                    <span class="total-pill" id="ccTotalPill">Total ₹0</span>
+                                    <button type="button" class="btn-add-item" id="addCcBtn" disabled>+ Add</button>
+                                </div>
+                            </div>
+                            <div class="obligation-rows-list" id="ccRowsList">
+                                <!-- Dynamic rows rendered here -->
+                            </div>
+                            <div class="bt-summary-line hidden" id="ccBtSummary">
+                                <span class="bt-summary-text"><span id="ccBtCount">0</span> selected for BT — excluded from obligations</span>
+                                <span class="bt-summary-amount" id="ccBtAmount">₹0</span>
+                            </div>
+                            <span class="field-error" id="ccError"></span>
+                        </div>
+
+                        <!-- Existing EMI Section -->
+                        <div class="obligation-col" id="emiCol">
+                            <div class="obligation-header">
+                                <label class="obligation-title">Existing EMI</label>
+                                <div class="obligation-header-actions">
+                                    <span class="total-pill" id="emiTotalPill">Total ₹0</span>
+                                    <button type="button" class="btn-add-item" id="addEmiBtn" disabled>+ Add</button>
+                                </div>
+                            </div>
+                            <div class="obligation-rows-list" id="emiRowsList">
+                                <!-- Dynamic rows rendered here -->
+                            </div>
+                            <div class="bt-summary-line hidden" id="emiBtSummary">
+                                <span class="bt-summary-text"><span id="emiBtCount">0</span> selected for BT — excluded from obligations</span>
+                                <span class="bt-summary-amount" id="emiBtAmount">₹0</span>
+                            </div>
+                            <span class="field-error" id="emiError"></span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- STEP 4: Underwriting Action Card -->
+                <div class="action-card" id="step4Card">
+                    <button id="checkFoirBtn" class="check-foir-btn" type="button" disabled>
+                        <span class="btn-icon">⚡</span>
+                        <span class="btn-text">Evaluate FOIR & Credit Eligibility</span>
+                        <span class="btn-arrow" aria-hidden="true">→</span>
+                    </button>
+                    <div class="action-hint-wrap">
+                        <div class="action-hint" id="actionHint">
+                            Complete all verification steps above to execute credit underwriting
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- RIGHT COLUMN: ELIGIBILITY & FOIR DECISION TERMINAL -->
+            <div class="right-column">
+
+                <!-- AWAITING CALCULATION PLACEHOLDER -->
+                <div class="terminal-intro-card" id="terminalIntroCard">
+                    <div class="terminal-header">
+                        <span class="terminal-badge">ELIGIBILITY &amp; FOIR DECISION</span>
+                        <div class="terminal-pulse">
+                            <span class="pulse-dot"></span>
+                            <span>Awaiting Calculation</span>
+                        </div>
+                    </div>
+                    <div class="terminal-hero-body" style="text-align: center; padding: 48px 24px;">
+                        <div class="placeholder-icon" style="margin: 0 auto 14px auto; width: 44px; height: 44px;">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+                                <line x1="2" y1="10" x2="22" y2="10"></line>
+                            </svg>
+                        </div>
+                        <strong
+                            style="display: block; font-size: 13.5px; color: var(--navy-900); margin-bottom: 4px;">Awaiting
+                            FOIR Calculation</strong>
+                        <span
+                            style="font-size: 11.5px; color: var(--text-muted); line-height: 1.4; display: block; max-width: 320px; margin: 0 auto;">
+                            Complete applicant details, loan terms, and obligations on the left, then click
+                            <strong>&ldquo;Evaluate FOIR &amp; Credit Eligibility&rdquo;</strong> to view results.
+                        </span>
+                    </div>
+                </div>
+
+                <!-- RESULTS CARD (Contains ONLY the 3 cards) -->
+                <section class="results-card hidden" id="resultCard" aria-live="polite">
+
+                    <!-- 3 PRIMARY RESULT CARDS ONLY -->
+                    <div class="results-grid">
+                        <!-- 1. Current FOIR -->
+                        <div class="metric-card foir-metric">
+                            <div class="metric-header">
+                                <span class="metric-label">Current FOIR</span>
+                                <span class="metric-tag" id="resultFoirBadge">Safe FOIR</span>
+                            </div>
+                            <div class="metric-val-wrap">
+                                <div class="metric-val" id="resultCurrentFoir">0%</div>
+                                <div class="foir-bar-container">
+                                    <div class="foir-bar-fill" id="foirBarFill" style="width: 0%;"></div>
+                                </div>
+                            </div>
+                            <span class="metric-desc">Obligations ÷ Net Monthly Salary</span>
+                        </div>
+
+                        <!-- 2. Available Monthly EMI -->
+                        <div class="metric-card emi-metric">
+                            <div class="metric-header">
+                                <span class="metric-label" id="emiCardLabel">Available EMI</span>
+                                <span class="metric-unit">per month</span>
+                            </div>
+                            <div class="metric-val-wrap">
+                                <div class="metric-val" id="resultAvailableEmi">₹0</div>
+                            </div>
+                            <span class="metric-desc" id="resultEmiDesc">Available monthly EMI capacity</span>
+                        </div>
+
+                        <!-- 3. Maximum Eligible Loan Amount (Editable) -->
+                        <div class="metric-card loan-metric highlight">
+                            <div class="metric-header">
+                                <label for="finalLoanAmountInput" class="metric-label">Max Loan Amount</label>
+                                <span class="metric-tag prime editable-tag" title="Customize your loan amount">Editable
+                                    ✎</span>
+                            </div>
+                            <div class="loan-input-box">
+                                <span class="loan-currency-symbol">₹</span>
+                                <input type="number" id="finalLoanAmountInput" class="loan-editable-input" min="0"
+                                    step="1000" placeholder="0" aria-label="Desired Loan Amount" />
+                            </div>
+                            <div class="loan-card-subline">
+                                <span class="metric-desc" id="resultMaxLoanCap">Max eligible: ₹0</span>
+                                <button type="button" id="resetToMaxLoanBtn" class="reset-max-btn hidden"
+                                    title="Restore maximum eligible loan amount">Reset to Max</button>
+                            </div>
+                            <div id="loanAmountWarning" class="loan-warning-msg hidden"></div>
+                        </div>
+                    </div>
+
+                    <!-- Underwriting & Policy Notes Banner -->
+                    <div id="lenderComplianceBox" class="compliance-box hidden">
+                        <div class="compliance-header">
+                            <span class="compliance-title" id="complianceTitle">Institutional Underwriting &amp;
+                                Documentation Policy</span>
+                            <span class="compliance-tag" id="complianceTierTag">TIER 1</span>
+                        </div>
+                        <div class="compliance-body">
+                            <div class="compliance-item" id="complianceDocItem">
+                                <span class="compliance-icon">📄</span>
+                                <div class="compliance-detail">
+                                    <strong>Mandatory Documentation</strong>
+                                    <span id="complianceDocText">Bank Statement (Last 3 Months) - Mandatory</span>
+                                </div>
+                            </div>
+                            <div class="compliance-item" id="complianceLocationItem">
+                                <span class="compliance-icon">📍</span>
+                                <div class="compliance-detail">
+                                    <strong>Serviceability &amp; City Tier</strong>
+                                    <span id="complianceLocationText">Hyderabad, Telangana (Tier 1 Metro)</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+
+        </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="app-footer">
+        <div class="footer-container">
+            <div class="footer-left">
+                <strong>LoanSense Institutional Engine</strong> • Automated Credit Policy & FOIR Matrix Simulator
+            </div>
+            <div class="footer-right">
+                <span>SOC-2 Type II & ISO 27001 Certified Infrastructure • Internal Banking Portal</span>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/js/config.js"></script>
+    <script src="/js/app.js?v=20261028_04"></script>
+</body>
+
+</html>
