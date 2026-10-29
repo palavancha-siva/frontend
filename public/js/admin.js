@@ -378,13 +378,16 @@ async function apiRequest(path, options = {}, token) {
 }
 
 function currentToken() {
-    return sessionStorage.getItem(TOKEN_KEY) || "";
+    return sessionStorage.getItem(TOKEN_KEY) || window.DEFAULT_ADMIN_TOKEN || "";
 }
 
 function showManagement(visible) {
-    loginPanel.classList.toggle("hidden", visible);
-    if (adminTabsNav) adminTabsNav.classList.toggle("hidden", !visible);
-    logoutButton.classList.toggle("hidden", !visible);
+    if (loginPanel) {
+        loginPanel.classList.add("hidden");
+        loginPanel.style.display = "none";
+    }
+    if (adminTabsNav) adminTabsNav.classList.remove("hidden");
+    if (logoutButton) logoutButton.style.display = "none";
     if (visible) {
         switchTab(activeTab);
     } else {
@@ -432,8 +435,7 @@ function getSelectedBankName() {
         return breBankSelect.value.trim();
     }
     if (bankSelect && bankSelect.value) {
-        const selectedOption = bankSelect.options[bankSelect.selectedIndex];
-        return selectedOption ? selectedOption.textContent.trim() : "";
+        return bankSelect.value.trim();
     }
     if (breBankSelect && breBankSelect.value) {
         return breBankSelect.value.trim();
@@ -450,11 +452,40 @@ function renderBanks(selectedBankName = "") {
         : "No banks available";
     bankSelect.append(placeholder);
 
-    for (const bank of banks) {
-        const option = document.createElement("option");
-        option.value = bank.name;
-        option.textContent = bank.name;
-        bankSelect.append(option);
+    const withCompanies = banks.filter(b => (b.company_count || 0) > 0);
+    const withoutCompanies = banks.filter(b => (b.company_count || 0) === 0);
+
+    if (withCompanies.length > 0 && withoutCompanies.length > 0) {
+        const groupWith = document.createElement("optgroup");
+        groupWith.label = "Banks with Company Lists";
+        for (const bank of withCompanies) {
+            const option = document.createElement("option");
+            option.value = bank.name;
+            option.textContent = `${bank.name} (${Number(bank.company_count).toLocaleString()} companies)`;
+            groupWith.append(option);
+        }
+        bankSelect.append(groupWith);
+
+        const groupWithout = document.createElement("optgroup");
+        groupWithout.label = "Other Banks (No company list uploaded)";
+        for (const bank of withoutCompanies) {
+            const option = document.createElement("option");
+            option.value = bank.name;
+            const extra = (bank.bre_rule_count || 0) > 0 ? ` (${bank.bre_rule_count} BRE rules)` : "";
+            option.textContent = `${bank.name}${extra}`;
+            groupWithout.append(option);
+        }
+        bankSelect.append(groupWithout);
+    } else {
+        for (const bank of banks) {
+            const option = document.createElement("option");
+            option.value = bank.name;
+            const countLabel = (bank.company_count || 0) > 0
+                ? `${bank.name} (${Number(bank.company_count).toLocaleString()} companies)`
+                : bank.name;
+            option.textContent = countLabel;
+            bankSelect.append(option);
+        }
     }
 
     if (selectedBankName) {
@@ -496,11 +527,19 @@ function updateUploadButtonLabel() {
     }
 }
 
-function renderMappings(mappings, isFiltered = false) {
+function renderMappings(mappings, isFiltered = false, totalCount = null) {
     mappingRows.replaceChildren();
     const count = mappings.length;
+    const totalFormatted = typeof totalCount === "number" && totalCount > 0 ? totalCount.toLocaleString() : null;
+
     if (isFiltered) {
-        mappingCount.textContent = `Found ${count.toLocaleString()} matching ${count === 1 ? 'company' : 'companies'}`;
+        mappingCount.textContent = totalFormatted && totalCount !== count
+            ? `Found ${count.toLocaleString()} matching companies (out of ${totalFormatted} total)`
+            : `Found ${count.toLocaleString()} matching ${count === 1 ? 'company' : 'companies'}`;
+    } else if (totalFormatted && totalCount > count) {
+        mappingCount.textContent = `Showing ${count.toLocaleString()} of ${totalFormatted} total company mappings (use search to find specific company)`;
+    } else if (totalFormatted) {
+        mappingCount.textContent = `Total ${totalFormatted} company mappings`;
     } else if (count >= 500) {
         mappingCount.textContent = `Showing 500 mappings (use search to find specific company)`;
     } else {
@@ -667,11 +706,19 @@ async function loadMappings(searchTerm = "") {
             currentToken()
         );
         if (requestedBank !== getSelectedBankName()) return;
-        if (!Array.isArray(records)) {
+        let list = [];
+        let totalCount = 0;
+        if (Array.isArray(records)) {
+            list = records;
+            totalCount = records.length;
+        } else if (records && Array.isArray(records.mappings)) {
+            list = records.mappings;
+            totalCount = Number(records.total ?? records.mappings.length);
+        } else {
             throw new Error("The company mapping response was invalid.");
         }
-        currentBankMappings = records;
-        renderMappings(records, Boolean(searchTerm.trim()));
+        currentBankMappings = list;
+        renderMappings(list, Boolean(searchTerm.trim()), totalCount);
     } catch (error) {
         if (error.name === "AbortError") return;
         if (handleAuthorizationError(error)) return;
@@ -1843,11 +1890,40 @@ function renderBreBanks(selectedBankName = "") {
         : "No banks available in database";
     breBankSelect.append(placeholder);
 
-    for (const bank of banks) {
-        const option = document.createElement("option");
-        option.value = bank.name;
-        option.textContent = bank.name;
-        breBankSelect.append(option);
+    const withBre = banks.filter(b => (b.bre_rule_count || 0) > 0);
+    const withoutBre = banks.filter(b => (b.bre_rule_count || 0) === 0);
+
+    if (withBre.length > 0 && withoutBre.length > 0) {
+        const groupBre = document.createElement("optgroup");
+        groupBre.label = "Banks with BRE Rules";
+        for (const bank of withBre) {
+            const option = document.createElement("option");
+            option.value = bank.name;
+            option.textContent = `${bank.name} (${bank.bre_rule_count} rules)`;
+            groupBre.append(option);
+        }
+        breBankSelect.append(groupBre);
+
+        const groupFlat = document.createElement("optgroup");
+        groupFlat.label = "Banks using Flat FOIR (No BRE rules)";
+        for (const bank of withoutBre) {
+            const option = document.createElement("option");
+            option.value = bank.name;
+            const compLabel = (bank.company_count || 0) > 0 ? ` (${Number(bank.company_count).toLocaleString()} companies)` : "";
+            option.textContent = `${bank.name}${compLabel}`;
+            groupFlat.append(option);
+        }
+        breBankSelect.append(groupFlat);
+    } else {
+        for (const bank of banks) {
+            const option = document.createElement("option");
+            option.value = bank.name;
+            const countLabel = (bank.bre_rule_count || 0) > 0
+                ? `${bank.name} (${bank.bre_rule_count} rules)`
+                : `${bank.name} (Flat FOIR)`;
+            option.textContent = countLabel;
+            breBankSelect.append(option);
+        }
     }
 
     if (previousVal && banks.some(b => b.name === previousVal)) {
@@ -1932,7 +2008,11 @@ function renderBreRules(rules) {
 
     const count = rules.length;
     if (breRuleCount) {
-        breRuleCount.textContent = count === 1 ? "1 rule configured" : `${count} rules configured`;
+        breRuleCount.textContent = count === 0
+            ? "0 rules (Uses Flat FOIR)"
+            : count === 1
+                ? "1 rule configured"
+                : `${count} rules configured`;
     }
 
     if (!selectedBank) {
@@ -1945,7 +2025,7 @@ function renderBreRules(rules) {
 
     if (count === 0) {
         if (breEmpty) {
-            breEmpty.textContent = `No rules configured for ${selectedBank}. Click "+ Add New Rule" to create one.`;
+            breEmpty.textContent = `No BRE rules configured for ${selectedBank}. This bank uses flat FOIR % (from Bank Company Mappings). Click "+ Add New Rule" or "Upload Rules (CSV)" to add custom salary-range rules.`;
             breEmpty.classList.remove("hidden");
         }
         return;
@@ -4075,5 +4155,5 @@ if (pincodeBankCsvFileInput) {
 if (pincodeBankRemoveFileButton) pincodeBankRemoveFileButton.addEventListener("click", resetPincodeBankUploadDialog);
 if (confirmPincodeBankUploadButton) confirmPincodeBankUploadButton.addEventListener("click", confirmPincodeBankUpload);
 
-const storedToken = currentToken();
-if (storedToken) void verifyToken(storedToken);
+showManagement(true);
+void Promise.all([loadBanks(), loadCompanies(), loadCategories()]);
