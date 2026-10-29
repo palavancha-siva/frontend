@@ -1,0 +1,26 @@
+.form-radio-group {
+  margin-bottom: 1.25rem;
+}
+
+.radio-group-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #334155;
+  margin-bottom: 0.5rem;
+}
+
+.radio-options-row {
+  display: flex;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.radio-option-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  color: #1e293b;
+  cursor: pointer;
+}

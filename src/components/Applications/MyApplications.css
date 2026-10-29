@@ -1,0 +1,43 @@
+.my-applications-page {
+  padding: 2.5rem 1rem;
+}
+
+.page-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.page-header-row h2 {
+  font-size: 1.6rem;
+  color: #0f172a;
+}
+
+.page-header-row p {
+  color: #64748b;
+  font-size: 0.95rem;
+}
+
+.applications-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+
+.no-applications {
+  text-align: center;
+  padding: 4rem 1rem;
+}
+
+.no-applications h3 {
+  font-size: 1.3rem;
+  color: #0f172a;
+  margin-bottom: 0.5rem;
+}
+
+.no-applications p {
+  color: #64748b;
+}

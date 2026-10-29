@@ -1,0 +1,71 @@
+.existing-loans-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.existing-loans-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+}
+
+.existing-loans-header h4 {
+  font-size: 1.1rem;
+  color: #0f172a;
+}
+
+.total-emi-badge {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #1e40af;
+  background-color: #dbeafe;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+}
+
+.loans-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.loan-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background-color: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #f1f5f9;
+}
+
+.loan-item-left strong {
+  display: block;
+  font-size: 0.9rem;
+  color: #1e293b;
+}
+
+.loan-item-left span {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.loan-item-right {
+  text-align: right;
+}
+
+.item-emi {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.item-out {
+  font-size: 0.75rem;
+  color: #64748b;
+}

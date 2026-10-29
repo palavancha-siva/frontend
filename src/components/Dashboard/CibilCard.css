@@ -1,0 +1,64 @@
+.cibil-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.cibil-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.cibil-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.cibil-badge {
+  background-color: #d1fae5;
+  color: #065f46;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  text-transform: uppercase;
+}
+
+.cibil-stats-grid {
+  display: flex;
+  justify-content: space-around;
+  border-top: 1px solid #f1f5f9;
+  border-bottom: 1px solid #f1f5f9;
+  padding: 0.85rem 0;
+  margin: 1rem 0;
+}
+
+.cibil-stat-col {
+  text-align: center;
+}
+
+.stat-label {
+  display: block;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.stat-val {
+  font-size: 1.05rem;
+  color: #1e293b;
+}
+
+.cibil-card-footer {
+  text-align: center;
+}
+
+.cibil-action-link {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #2563eb;
+}

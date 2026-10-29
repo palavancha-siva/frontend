@@ -1,0 +1,70 @@
+.offers-table-wrapper {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow-x: auto;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.offers-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+.offers-table th {
+  background-color: #f8fafc;
+  padding: 0.85rem 1rem;
+  color: #475569;
+  font-weight: 600;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.offers-table td {
+  padding: 1rem;
+  border-bottom: 1px solid #f1f5f9;
+  color: #1e293b;
+}
+
+.bank-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.bank-logo-bullet {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background-color: #eff6ff;
+  color: #2563eb;
+  font-weight: 700;
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.offer-amount {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.rate-badge {
+  color: #047857;
+  font-weight: 600;
+}
+
+.offer-emi {
+  font-weight: 600;
+}
+
+.offers-empty-state {
+  text-align: center;
+  padding: 2.5rem;
+  background: #ffffff;
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  color: #64748b;
+}

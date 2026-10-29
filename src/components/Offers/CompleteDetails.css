@@ -1,0 +1,23 @@
+.complete-details-page {
+  padding: 2.5rem 1rem;
+}
+
+.offers-header-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.offers-header-banner h2 {
+  font-size: 1.6rem;
+  color: #0f172a;
+}
+
+.offers-header-banner p {
+  color: #64748b;
+  font-size: 0.95rem;
+  margin-top: 0.25rem;
+}

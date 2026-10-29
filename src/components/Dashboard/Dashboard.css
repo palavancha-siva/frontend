@@ -1,0 +1,67 @@
+.dashboard-page {
+  padding: 2rem 1rem;
+}
+
+.dashboard-welcome-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  color: #ffffff;
+  padding: 2rem;
+  border-radius: 12px;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.dashboard-welcome-banner h2 {
+  font-size: 1.6rem;
+  margin-bottom: 0.25rem;
+}
+
+.dashboard-welcome-banner p {
+  color: #94a3b8;
+  font-size: 0.95rem;
+}
+
+.carousel-card-item {
+  min-width: 300px;
+  max-width: 320px;
+  flex-shrink: 0;
+}
+
+.dashboard-grid-two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 2.5rem;
+}
+
+.dashboard-offers-section {
+  margin-bottom: 2rem;
+}
+
+.section-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.section-title-row h3 {
+  font-size: 1.25rem;
+  color: #0f172a;
+}
+
+.recalculate-link {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #2563eb;
+}
+
+@media (max-width: 768px) {
+  .dashboard-grid-two {
+    grid-template-columns: 1fr;
+  }
+}

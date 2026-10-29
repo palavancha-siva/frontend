@@ -1,0 +1,33 @@
+.check-eligibility-card {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.check-eligibility-header {
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.check-eligibility-header h3 {
+  font-size: 1.4rem;
+  color: #0f172a;
+}
+
+.check-eligibility-header p {
+  font-size: 0.9rem;
+  color: #64748b;
+  margin-top: 0.25rem;
+}
+
+.form-row-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+
+@media (max-width: 640px) {
+  .form-row-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  webapp-dev:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: fin_user_webapp_dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../src:/app/src
+      - ../public:/app/public
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - REACT_APP_API_URL=http://localhost:5104/api
+    command: npm start

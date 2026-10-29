@@ -1,0 +1,96 @@
+.credit-report-sheet {
+  max-width: 900px;
+  margin: 1.5rem auto;
+}
+
+.report-header-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.report-header-banner h3 {
+  font-size: 1.35rem;
+  color: #0f172a;
+}
+
+.report-header-banner p {
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.report-pan-badge {
+  font-family: monospace;
+  font-weight: 700;
+  background-color: #f1f5f9;
+  padding: 0.35rem 0.65rem;
+  border-radius: 6px;
+  color: #334155;
+}
+
+.report-main-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.25fr;
+  gap: 2rem;
+  align-items: center;
+}
+
+.report-gauge-side {
+  text-align: center;
+}
+
+.bureau-grade-tag {
+  display: inline-block;
+  margin-top: 0.5rem;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #065f46;
+  background-color: #d1fae5;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+}
+
+.report-factors-side {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.factor-metric-card {
+  padding: 1rem;
+  background-color: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #f1f5f9;
+}
+
+.factor-name {
+  display: block;
+  font-size: 0.85rem;
+  color: #475569;
+}
+
+.factor-score {
+  display: block;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0.15rem 0;
+}
+
+.text-success {
+  color: #10b981;
+}
+
+.factor-metric-card small {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+@media (max-width: 768px) {
+  .report-main-grid {
+    grid-template-columns: 1fr;
+  }
+}
