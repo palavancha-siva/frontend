@@ -24,12 +24,12 @@
                 <h1>Bank Company Configuration</h1>
                 <p>Manage company, category, and FOIR settings for each bank.</p>
             </div>
-            <button id="logoutButton" class="admin-button admin-button-secondary hidden" type="button">
+            <button id="logoutButton" class="admin-button admin-button-secondary" style="display:none;" type="button">
                 Sign out
             </button>
         </section>
 
-        <section id="loginPanel" class="admin-panel login-panel">
+        <section id="loginPanel" class="admin-panel login-panel" style="display:none;">
             <h2>Administrator access</h2>
             <p>Enter the admin API token configured for this LoanSense server.</p>
             <form id="loginForm" class="login-form">
@@ -43,7 +43,7 @@
 
         <div id="adminMessage" class="admin-message" role="status" aria-live="polite"></div>
 
-        <nav id="adminTabsNav" class="admin-tabs hidden" aria-label="Admin Sections">
+        <nav id="adminTabsNav" class="admin-tabs" aria-label="Admin Sections">
             <button id="tabBreBtn" class="admin-tab-btn active" type="button">
                 ⚡ BRE (Business Rules Engine)
             </button>
@@ -1104,6 +1104,6 @@
     </dialog>
 
     <script src="/js/config.js"></script>
-    <script src="/js/admin.js?v=20261028_06" defer></script>
+    <script src="/js/admin.js?v=20261029_tab_aware_banks" defer></script>
 </body>
 </html>

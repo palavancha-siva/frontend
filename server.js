@@ -14,7 +14,9 @@ dotenv.config();
 
 const app = express();
 const port = Number(process.env.PORT || 3000);
-const backendApiUrl = (process.env.BACKEND_API_URL || "http://localhost:5104").replace(/\/+$/, "");
+const rawBackend = (process.env.BACKEND_API_URL || "http://localhost:5150").replace(/\/+$/, "");
+const backendApiUrl = rawBackend.replace(/\/api$/, "");
+const defaultAdminToken = process.env.ADMIN_API_TOKEN || process.env.ADMIN_PIN || "1234";
 
 const publicDir = path.join(__dirname, "public");
 
@@ -24,6 +26,7 @@ app.get("/js/config.js", (_req, res) => {
     res.send(`
 // Auto-generated runtime API configuration
 window.LOANSENSE_API_URL = "${backendApiUrl}";
+window.DEFAULT_ADMIN_TOKEN = "${defaultAdminToken}";
 window.apiUrl = function(endpoint) {
     var base = (window.LOANSENSE_API_URL || "").replace(/\\/+$/, "");
     var path = endpoint.charAt(0) === "/" ? endpoint : "/" + endpoint;
@@ -48,7 +51,6 @@ app.listen(port, () => {
     console.log(`=======================================================`);
     console.log(`LoanSense Frontend running on http://localhost:${port}`);
     console.log(`Targeting Backend API at: ${backendApiUrl}`);
-    console.log(`Customer Portal: http://localhost:${port}/`);
-    console.log(`Admin Panel:     http://localhost:${port}/admin`);
+    console.log(`Development Auto-Auth Enabled for Admin Portal`);
     console.log(`=======================================================`);
 });
