@@ -6,7 +6,7 @@
     <meta name="description" content="Manage bank company mappings in LoanSense">
     <title>LoanSense Settings - Bank Configuration</title>
     <link rel="stylesheet" href="/css/styles.css">
-    <link rel="stylesheet" href="/css/admin.css">
+    <link rel="stylesheet" href="/css/admin.css?v=20261031_dialog_fix">
 </head>
 <body>
     <header class="topbar">
@@ -196,41 +196,63 @@
 
         <!-- SERVICEABLE PINCODES & LOCATIONS PANEL -->
         <section id="pincodesPanel" class="admin-panel configuration-panel hidden" aria-label="Pincode serviceability management">
-            <div class="bre-toolbar" style="flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;">
+            <div class="pincode-toolbar-card">
+                <!-- ROW 1: Master State Pincodes & Locations -->
+                <div class="pincode-row">
+                    <div class="pincode-row-left">
+                        <label for="pincodeStateSelect" class="pincode-row-label">📍 State</label>
+                        <select id="pincodeStateSelect" class="bre-select pincode-select" aria-label="Filter by state">
+                            <option value="all">All States / Regions</option>
+                        </select>
+                        <button id="pincodeAddStateButton" class="admin-button admin-button-secondary" type="button" title="Add a new state or region" style="padding: 7px 12px; font-size: 12.5px; white-space: nowrap;">
+                            + Add State
+                        </button>
+                    </div>
+                    <div class="pincode-row-right">
+                        <button id="uploadPincodesButton" class="admin-button admin-button-primary" type="button">
+                            ⬆️ Upload State Pincodes
+                        </button>
+                        <button id="samplePincodesCsvButton" class="admin-button admin-button-secondary" type="button" title="Download sample CSV template for master state pincodes">
+                            ⬇️ Sample CSV
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ROW 2: Service Bank Pincodes -->
+                <div class="pincode-row">
+                    <div class="pincode-row-left">
+                        <label for="pincodeBankSelect" class="pincode-row-label">🏦 Service bank pincode</label>
+                        <select id="pincodeBankSelect" class="bre-select pincode-select" aria-label="Filter by bank">
+                            <option value="all">All Serviceable Banks</option>
+                        </select>
+                        <button id="pincodeAddBankButton" class="admin-button admin-button-secondary" type="button" title="Add a new partner bank" style="padding: 7px 12px; font-size: 12.5px; white-space: nowrap;">
+                            + Add Bank
+                        </button>
+                    </div>
+                    <div class="pincode-row-right">
+                        <button id="uploadBankServiceabilityButton" class="admin-button admin-button-primary" type="button" style="background:#0284c7; border-color:#0284c7;">
+                            ⬆️ Upload Bank Pincodes
+                        </button>
+                        <button id="sampleBankPincodesButton" class="admin-button admin-button-secondary" type="button" title="Download sample CSV template for bank serviceability">
+                            ⬇️ Sample CSV
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SEARCH, TIER FILTER & TABLE NOTICE -->
+            <div class="mapping-table-toolbar" style="display:flex; justify-content:space-between; align-items:center; margin:16px 0 10px; gap:12px; flex-wrap:wrap;">
                 <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                    <select id="pincodeStateSelect" class="bre-select" style="max-width: 200px;" aria-label="Filter by state">
-                        <option value="all">All States / Regions</option>
-                    </select>
-                    <select id="pincodeTierSelect" class="bre-select" style="max-width: 150px;" aria-label="Filter by tier">
+                    <input id="pincodeSearchInput" type="text" placeholder="🔍 Search PIN code, Location or Region..." style="padding:8px 14px; border:1px solid #cbd5e1; border-radius:6px; font-size:12.5px; width:280px;" aria-label="Search pincodes">
+                    <select id="pincodeTierSelect" class="bre-select" style="max-width: 150px; padding: 7px 10px; font-size: 12.5px;" aria-label="Filter by tier">
                         <option value="all">All Tiers</option>
                         <option value="TIER 1">TIER 1 (Metros)</option>
                         <option value="TIER 2">TIER 2</option>
                     </select>
-                    <select id="pincodeServiceableSelect" class="bre-select" style="max-width: 180px;" aria-label="Filter by serviceability">
-                        <option value="all">All Serviceability</option>
-                        <option value="1">Finnable Serviceable</option>
-                        <option value="0">Non-Serviceable</option>
-                    </select>
                 </div>
-                <div class="bre-toolbar-actions" style="display: flex; gap: 8px;">
-                    <button id="uploadPincodesButton" class="admin-button admin-button-primary" type="button">
-                        ⬆️ Upload Master Pincodes
-                    </button>
-                    <button id="uploadBankServiceabilityButton" class="admin-button admin-button-secondary" type="button" style="background:#0284c7; color:#fff; border-color:#0284c7;">
-                        🏦 Upload Bank Serviceability
-                    </button>
-                    <button id="samplePincodesCsvButton" class="admin-button admin-button-secondary" type="button" title="Download sample CSV template for pincodes">
-                        ⬇️ Sample CSV Template
-                    </button>
-                </div>
+                <div id="pincodeFilterNotice" style="font-size:12px; color:#64748b; font-weight:500;"></div>
             </div>
-
-            <div class="mapping-table-toolbar" style="display:flex; justify-content:space-between; align-items:center; margin:14px 0 8px;">
-                <div id="pincodeFilterNotice" style="font-size:12px; color:#64748b;"></div>
-                <input id="pincodeSearchInput" type="text" placeholder="🔍 Search PIN code, Location or Region..." style="padding:7px 14px; border:1px solid #cbd5e1; border-radius:6px; font-size:12.5px; width:280px;" aria-label="Search pincodes">
-            </div>
-
-            <div id="pincodesNotice" class="admin-message" role="status" aria-live="polite"></div>
+<div id="pincodesNotice" class="admin-message" role="status" aria-live="polite"></div>
 
             <div class="admin-list-wrap">
                 <table class="admin-table pincodes-table">
@@ -1104,6 +1126,6 @@
     </dialog>
 
     <script src="/js/config.js"></script>
-    <script src="/js/admin.js?v=20261029_tab_aware_banks" defer></script>
+    <script src="/js/admin.js?v=20261030_add_buttons" defer></script>
 </body>
 </html>
