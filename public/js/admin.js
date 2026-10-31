@@ -87,6 +87,9 @@ const pincodeTierSelect = document.getElementById("pincodeTierSelect");
 const pincodeServiceableSelect = document.getElementById("pincodeServiceableSelect");
 const uploadPincodesButton = document.getElementById("uploadPincodesButton");
 const samplePincodesCsvButton = document.getElementById("samplePincodesCsvButton");
+const pincodeBankSelect = document.getElementById("pincodeBankSelect");
+const sampleBankPincodesButton = document.getElementById("sampleBankPincodesButton");
+const pincodeAddBankButton = document.getElementById("pincodeAddBankButton");
 
 // Add State Dialog Elements
 const pincodeAddStateDialog = document.getElementById("pincodeAddStateDialog");
@@ -499,6 +502,7 @@ function renderBanks(selectedBankName = "") {
     updateUploadButtonLabel();
     renderBreBanks(selectedBankName || (breBankSelect ? breBankSelect.value : ""));
     renderBankServiceabilityOptions(selectedBankName || (bankServiceabilityTargetSelect ? bankServiceabilityTargetSelect.value : ""));
+    renderPincodeBankFilterOptions(selectedBankName || (pincodeBankSelect ? pincodeBankSelect.value : ""));
 }
 
 function getSelectedBank() {
@@ -2855,6 +2859,13 @@ if (confirmBreUploadButton) confirmBreUploadButton.addEventListener("click", con
 
 async function initPincodesTab() {
     currentPincodePage = 1;
+    if (!banks || banks.length === 0) {
+        try {
+            await loadBanks();
+        } catch (_e) {}
+    }
+    renderPincodeStateOptions(currentAvailableStates);
+    renderPincodeBankFilterOptions();
     await Promise.all([
         loadPincodeStats(),
         loadPincodes(1)
@@ -2887,6 +2898,7 @@ async function loadPincodes(page = 1) {
     const search = pincodeSearchInput ? pincodeSearchInput.value.trim() : "";
     const state = pincodeStateSelect ? pincodeStateSelect.value : "all";
     const tier = pincodeTierSelect ? pincodeTierSelect.value : "all";
+    const bank = pincodeBankSelect ? pincodeBankSelect.value : "all";
     const serviceable = pincodeServiceableSelect ? pincodeServiceableSelect.value : "all";
 
     const params = new URLSearchParams({
@@ -2896,7 +2908,17 @@ async function loadPincodes(page = 1) {
     if (search) params.set("search", search);
     if (state && state !== "all") params.set("state", state);
     if (tier && tier !== "all") params.set("tier", tier);
+    if (bank && bank !== "all") params.set("bank", bank);
     if (serviceable && serviceable !== "all") params.set("serviceable", serviceable);
+
+    if (pincodeFilterNotice) {
+        const filters = [];
+        if (state && state !== "all") filters.push(`State: <strong>${escapeHtml(state)}</strong>`);
+        if (bank && bank !== "all") filters.push(`Bank: <strong>${escapeHtml(bank)}</strong>`);
+        if (tier && tier !== "all") filters.push(`Tier: <strong>${escapeHtml(tier)}</strong>`);
+        if (search) filters.push(`Search: "${escapeHtml(search)}"`);
+        pincodeFilterNotice.innerHTML = filters.length > 0 ? filters.join(" ? ") : "";
+    }
 
     try {
         const data = await apiRequest(`/api/admin/pincodes?${params.toString()}`, {}, currentToken());
@@ -2909,26 +2931,9 @@ async function loadPincodes(page = 1) {
         if (pincodesPrevBtn) pincodesPrevBtn.disabled = data.page <= 1;
         if (pincodesNextBtn) pincodesNextBtn.disabled = data.page >= totalPincodePages;
 
-        if (data.availableStates && data.availableStates.length > 0) {
+        if (data.availableStates) {
             currentAvailableStates = data.availableStates;
-            if (pincodeStateSelect) {
-                const currentSelected = pincodeStateSelect.value;
-                pincodeStateSelect.innerHTML = `<option value="all">All States / Regions</option>`;
-                data.availableStates.forEach(st => {
-                    const opt = document.createElement("option");
-                    opt.value = st;
-                    opt.textContent = st;
-                    pincodeStateSelect.appendChild(opt);
-                });
-                if (currentSelected && data.availableStates.includes(currentSelected)) {
-                    pincodeStateSelect.value = currentSelected;
-                } else if (state !== "all" && data.availableStates.includes(state)) {
-                    pincodeStateSelect.value = state;
-                }
-                if (pincodeEditStateButton) {
-                    pincodeEditStateButton.disabled = !pincodeStateSelect.value || pincodeStateSelect.value === "all";
-                }
-            }
+            renderPincodeStateOptions(data.availableStates);
         }
 
         renderPincodesTable(data.items || []);
@@ -3552,6 +3557,123 @@ async function confirmPincodeBankUpload() {
     }
 }
 
+const DEFAULT_INDIAN_STATES = [
+    "Andhra Pradesh",
+    "Assam",
+    "Bihar",
+    "Chandigarh",
+    "Chhattisgarh",
+    "Delhi",
+    "Goa",
+    "Gujarat",
+    "Haryana",
+    "Himachal Pradesh",
+    "Jammu and Kashmir",
+    "Jharkhand",
+    "Karnataka",
+    "Kerala",
+    "Madhya Pradesh",
+    "Maharashtra",
+    "Odisha",
+    "Punjab",
+    "Rajasthan",
+    "Tamil Nadu",
+    "Telangana",
+    "Uttar Pradesh",
+    "Uttarakhand",
+    "West Bengal"
+];
+
+function renderPincodeStateOptions(availableFromBackend = []) {
+    if (!pincodeStateSelect) return;
+    const currentSelected = pincodeStateSelect.value || "all";
+
+    const stateSet = new Set(DEFAULT_INDIAN_STATES);
+    if (Array.isArray(availableFromBackend)) {
+        availableFromBackend.forEach(st => {
+            if (st && typeof st === "string" && st.trim() && st.toLowerCase() !== "all") {
+                stateSet.add(st.trim());
+            }
+        });
+    }
+
+    const sortedStates = Array.from(stateSet).sort((a, b) => a.localeCompare(b));
+
+    pincodeStateSelect.innerHTML = `<option value="all">All States / Regions</option>`;
+    sortedStates.forEach(st => {
+        const opt = document.createElement("option");
+        opt.value = st;
+        opt.textContent = st;
+        pincodeStateSelect.appendChild(opt);
+    });
+
+    if (currentSelected && Array.from(pincodeStateSelect.options).some(o => o.value.toLowerCase() === currentSelected.toLowerCase())) {
+        pincodeStateSelect.value = currentSelected;
+    } else {
+        pincodeStateSelect.value = "all";
+    }
+
+    if (pincodeEditStateButton) {
+        pincodeEditStateButton.disabled = !pincodeStateSelect.value || pincodeStateSelect.value === "all";
+    }
+}
+
+function renderPincodeBankFilterOptions(selectedBank = "") {
+    if (!pincodeBankSelect) return;
+
+    const currentVal = selectedBank || (pincodeBankSelect && pincodeBankSelect.value) || "all";
+
+    const defaultLenders = [
+        "Axis Bank",
+        "ADITYA BIRLA",
+        "Bank of Baroda",
+        "Canara Bank",
+        "Finnable",
+        "HDFC Bank",
+        "ICICI Bank",
+        "IDFC First Bank",
+        "InCred",
+        "IndusInd Bank",
+        "Kotak Mahindra Bank",
+        "Poonawalla Fincorp",
+        "State Bank of India (SBI)",
+        "Yes Bank"
+    ];
+
+    const bankMap = new Map();
+    for (const name of defaultLenders) {
+        bankMap.set(name.trim().toUpperCase(), name.trim());
+    }
+
+    if (Array.isArray(banks)) {
+        for (const b of banks) {
+            const name = (typeof b === "string" ? b : (b && b.name) ? b.name : "").trim();
+            if (name) {
+                const upper = name.toUpperCase();
+                if (!bankMap.has(upper)) {
+                    bankMap.set(upper, name);
+                }
+            }
+        }
+    }
+
+    const sortedNames = Array.from(bankMap.values()).sort((a, b) => a.localeCompare(b));
+
+    pincodeBankSelect.innerHTML = `<option value="all">All Serviceable Banks</option>`;
+    for (const name of sortedNames) {
+        const opt = document.createElement("option");
+        opt.value = name;
+        opt.textContent = name;
+        pincodeBankSelect.appendChild(opt);
+    }
+
+    if (currentVal && Array.from(pincodeBankSelect.options).some(o => o.value.toUpperCase() === currentVal.toUpperCase())) {
+        pincodeBankSelect.value = currentVal;
+    } else {
+        pincodeBankSelect.value = "all";
+    }
+}
+
 function renderBankServiceabilityOptions(selectedBank = "") {
     if (!bankServiceabilityTargetSelect) return;
 
@@ -3971,6 +4093,12 @@ if (uploadPincodesButton) {
     uploadPincodesButton.addEventListener("click", () => {
         resetPincodeMasterUploadDialog();
         renderMasterStateOptions();
+        if (pincodeStateSelect && pincodeStateSelect.value && pincodeStateSelect.value !== "all") {
+            if (pincodeMasterTargetStateSelect) {
+                pincodeMasterTargetStateSelect.value = pincodeStateSelect.value;
+                updateMasterStateButtons();
+            }
+        }
         pincodeMasterUploadDialog.showModal();
     });
 }
@@ -4038,6 +4166,8 @@ if (pincodeMasterEditStateInput) {
     });
 }
 if (samplePincodesCsvButton) samplePincodesCsvButton.addEventListener("click", downloadSamplePincodesCsv);
+if (sampleBankPincodesButton) sampleBankPincodesButton.addEventListener("click", downloadSampleBankPincodesCsv);
+if (pincodeBankSelect) pincodeBankSelect.addEventListener("change", () => loadPincodes(1));
 if (pincodeMasterDownloadSampleButton) pincodeMasterDownloadSampleButton.addEventListener("click", downloadSamplePincodesCsv);
 
 if (closePincodeMasterUploadDialogButton) closePincodeMasterUploadDialogButton.addEventListener("click", () => pincodeMasterUploadDialog.close());
@@ -4082,7 +4212,10 @@ if (uploadBankServiceabilityButton) {
                 // Ignore failure
             }
         }
-        renderBankServiceabilityOptions();
+        const target = (pincodeBankSelect && pincodeBankSelect.value && pincodeBankSelect.value !== "all")
+            ? pincodeBankSelect.value
+            : "";
+        renderBankServiceabilityOptions(target);
         pincodeBankUploadDialog.showModal();
     });
 }
@@ -4154,6 +4287,7 @@ if (pincodeBankCsvFileInput) {
 }
 if (pincodeBankRemoveFileButton) pincodeBankRemoveFileButton.addEventListener("click", resetPincodeBankUploadDialog);
 if (confirmPincodeBankUploadButton) confirmPincodeBankUploadButton.addEventListener("click", confirmPincodeBankUpload);
+if (pincodeAddBankButton) pincodeAddBankButton.addEventListener("click", openBankDialog);
 
 showManagement(true);
 void Promise.all([loadBanks(), loadCompanies(), loadCategories()]);
