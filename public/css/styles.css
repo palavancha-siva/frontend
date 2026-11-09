@@ -514,8 +514,37 @@ textarea {
     position: relative;
 }
 
-.step-card.step-1-card {
-    padding: 16px 20px;
+.step-card.step-1-card,
+.step-card.unified-calc-card {
+    padding: 18px 22px;
+}
+
+.card-subsection {
+    margin-top: 4px;
+    padding-top: 0;
+    border: none !important;
+    border-top: none !important;
+}
+
+.card-subsection.section-1-block {
+    margin-top: 0;
+    padding-top: 0;
+    border: none !important;
+    border-top: none !important;
+}
+
+#step3Card.card-subsection {
+    margin-top: 4px;
+    padding-top: 0;
+    border: none !important;
+    border-top: none !important;
+}
+
+#step2Lock,
+#step3Lock,
+#step2Badge,
+#step3Badge {
+    display: none !important;
 }
 
 .step-card:hover {
@@ -689,13 +718,18 @@ textarea {
 }
 
 /* ICICI Home Loan Policy Booster Panel */
-/* Step 1: Compact Home Loan Toggle beside Salary (revealed ONLY when ICICI is selected) */
+/* Step 1: Compact Home Loan Toggle (revealed ONLY when ICICI is selected) */
 .step1-inputs-grid .home-loan-group {
-    grid-column: span 1;
+    grid-column: 1 / -1;
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    animation: fadeInSlide 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    gap: 6px;
+    background: #f8fafc;
+    border: 1px dashed #cbd5e1;
+    border-radius: var(--radius-md);
+    padding: 10px 14px;
+    margin-top: 4px;
+    transition: opacity 0.2s ease;
 }
 
 .step1-inputs-grid .home-loan-group.hidden {
@@ -742,26 +776,32 @@ textarea {
 }
 
 .step-1-card input[type="text"],
-.step-1-card input[type="number"] {
+.step-1-card input[type="number"],
+.unified-calc-card input[type="text"],
+.unified-calc-card input[type="number"] {
     height: 36px;
     font-size: 13px;
 }
 
-.step-1-card .form-group {
+.step-1-card .form-group,
+.unified-calc-card .form-group {
     gap: 4px;
 }
 
-.step-1-card .form-group label {
+.step-1-card .form-group label,
+.unified-calc-card .form-group label {
     font-size: 11px;
 }
 
-.step-1-card .field-error {
+.step-1-card .field-error,
+.unified-calc-card .field-error {
     min-height: 0;
     font-size: 10.5px;
 }
 
-.step-1-card .field-error:empty {
-    display: none;
+.step-1-card .field-error:empty,
+.unified-calc-card .field-error:empty {
+    display: none !important;
 }
 
 .inputs-row {
@@ -1253,22 +1293,28 @@ input:disabled {
    ELIGIBLE LENDERS MATRIX & TABLE
    ========================================================= */
 
-.lenders-section {
-    margin-top: 18px;
-    padding-top: 18px;
-    border-top: 1px solid var(--border-subtle);
+.lenders-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 20px 24px;
+    box-shadow: var(--shadow-sm);
+    transition: border-color var(--transition-base), box-shadow var(--transition-base);
+    position: relative;
+    animation: fadeInSlide 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.step-1-card .lenders-section {
-    margin-top: 12px;
-    padding-top: 10px;
+.lenders-card.hidden {
+    display: none !important;
 }
 
 .lenders-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 12px;
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-subtle);
 }
 
 .step-1-card .lenders-header {
@@ -1477,31 +1523,33 @@ input:disabled {
     box-shadow: var(--shadow-xs);
 }
 
+/* =========================================================
+   LENDERS MARKETPLACE TABLE (MATCHING REFERENCE DESIGN)
+   ========================================================= */
+
 .lenders-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 12px;
+    font-size: 13px;
     text-align: left;
+    background: #ffffff;
 }
 
-.lenders-table thead {
-    background: var(--navy-50);
-    border-bottom: 1px solid var(--border-subtle);
-}
-
-.lenders-table th {
-    padding: 10px 14px;
-    font-size: 10.5px;
+.lenders-table thead th {
+    background: #ffffff;
+    border-bottom: 1px solid #f1f5f9;
+    padding: 12px 16px;
+    font-size: 11px;
     font-weight: 700;
-    color: var(--navy-600);
+    color: #94a3b8;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.6px;
 }
 
 .lenders-table tbody tr {
-    border-bottom: 1px solid var(--navy-100);
+    border-bottom: 1px solid #f1f5f9;
     cursor: pointer;
-    transition: background var(--transition-fast), border-color var(--transition-fast);
+    transition: background 0.15s ease;
 }
 
 .lenders-table tbody tr:last-child {
@@ -1509,49 +1557,115 @@ input:disabled {
 }
 
 .lenders-table tbody tr:hover {
-    background: #f8fbff;
+    background: #f8fafc;
 }
 
 .lenders-table tbody tr.selected {
-    background: #edf5ff;
-    position: relative;
-}
-
-.lenders-table tbody tr.selected td {
-    color: var(--blue-900);
-    font-weight: 600;
+    background: #f0f7ff !important;
 }
 
 .lenders-table td {
-    padding: 11px 14px;
+    padding: 16px;
     vertical-align: middle;
 }
 
-.col-select {
-    width: 44px;
-    text-align: center;
+/* Company-Only Discovery Mode (Before Check FOIR is Clicked) */
+/* Hides Category, FOIR, Upto Loan Amount, ROI, Tenure, and Action columns */
+.lenders-table.company-only-mode thead th:not(.col-lender),
+.lenders-table.company-only-mode tbody td:not(.col-lender) {
+    display: none !important;
 }
 
-.col-select input[type="radio"] {
-    width: 16px;
-    height: 16px;
-    cursor: pointer;
-    accent-color: var(--blue-600);
+.lenders-table.company-only-mode thead th.col-lender,
+.lenders-table.company-only-mode tbody td.col-lender {
+    width: 100% !important;
+    min-width: 0 !important;
+}
+
+.lenders-table.company-only-mode tbody tr {
+    transition: background 0.15s ease;
+}
+
+.lenders-table.company-only-mode .bank-cell {
+    padding: 4px 0;
+}
+
+.col-lender {
+    min-width: 220px;
+}
+
+.col-cat {
+    min-width: 110px;
+}
+
+.col-foir {
+    min-width: 90px;
+}
+
+.col-amount {
+    min-width: 130px;
+}
+
+.col-roi {
+    min-width: 140px;
+}
+
+.col-tenure {
+    min-width: 120px;
+}
+
+.col-action {
+    width: 120px;
+    text-align: right;
+}
+
+.cat-pill {
+    display: inline-block;
+    padding: 3px 8px;
+    font-size: 10.5px;
+    font-weight: 700;
+    border-radius: 4px;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+}
+
+.cat-pill.cat-a {
+    background: #ecfdf5;
+    color: #047857;
+    border: 1px solid #a7f3d0;
+}
+
+.cat-pill.cat-b {
+    background: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+}
+
+.foir-pill {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    color: #0f172a;
+    background: #f1f5f9;
+    padding: 3px 8px;
+    border-radius: 4px;
+    border: 1px solid #e2e8f0;
 }
 
 .bank-cell {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
 }
 
 .bank-avatar {
-    width: 32px;
-    height: 32px;
-    border-radius: var(--radius-sm);
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
     background: linear-gradient(135deg, var(--navy-900) 0%, var(--blue-800) 100%);
     color: #ffffff;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 800;
     display: flex;
     align-items: center;
@@ -1559,10 +1673,82 @@ input:disabled {
     font-family: 'Plus Jakarta Sans', sans-serif;
     letter-spacing: -0.2px;
     flex-shrink: 0;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
-/* Bank-specific brand avatars */
+/* Authentic official bank logo badges */
+.bank-avatar.bank-logo-avatar {
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+    overflow: hidden;
+    flex-shrink: 0;
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.bank-avatar.bank-logo-avatar .bank-logo-img {
+    width: 100%;
+    height: 100%;
+    max-width: 34px;
+    max-height: 34px;
+    object-fit: contain;
+    display: block;
+    image-rendering: -webkit-optimize-contrast;
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.bank-avatar.bank-logo-avatar svg {
+    width: 100%;
+    height: 100%;
+    max-width: 34px;
+    max-height: 34px;
+    display: block;
+    object-fit: contain;
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.lender-row:hover .bank-avatar.bank-logo-avatar {
+    border-color: #cbd5e1;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08) !important;
+    transform: translateY(-1px);
+}
+
+.lender-row:hover .bank-avatar.bank-logo-avatar .bank-logo-img,
+.lender-row:hover .bank-avatar.bank-logo-avatar svg {
+    transform: scale(1.08);
+}
+
+.bank-avatar.bank-logo-avatar .bank-fallback-initials {
+    font-size: 13px;
+    font-weight: 800;
+    color: #1e293b;
+    letter-spacing: -0.2px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.step-1-card .bank-avatar.bank-logo-avatar {
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    border-radius: 8px;
+    padding: 2px;
+}
+
+.step-1-card .bank-avatar.bank-logo-avatar .bank-logo-img,
+.step-1-card .bank-avatar.bank-logo-avatar svg {
+    max-width: 24px;
+    max-height: 24px;
+}
+
+/* Bank-specific brand avatars (legacy fallback) */
 .bank-avatar.bank-hdfc {
     background: linear-gradient(135deg, #004c8f 0%, #ed232a 100%);
 }
@@ -1587,43 +1773,123 @@ input:disabled {
     background: linear-gradient(135deg, #009900 0%, #0066b2 100%);
 }
 
+.bank-avatar.bank-bajaj {
+    background: linear-gradient(135deg, #005a9c 0%, #0093d8 100%);
+}
+
+.bank-info-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
 .bank-name-text {
+    font-size: 14px;
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 1.25;
+}
+
+/* Feature tags matching reference image */
+.lender-feature-tag {
+    font-size: 10.5px;
+    font-weight: 700;
+    border-radius: 4px;
+    padding: 2px 8px;
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    line-height: 1.2;
+}
+
+.tag-best-rate {
+    background: #ecfdf5;
+    color: #059669;
+    border: 1px solid #a7f3d0;
+}
+
+.tag-high-eligibility {
+    background: #ecfdf5;
+    color: #047857;
+    border: 1px solid #6ee7b7;
+}
+
+.tag-popular {
+    background: #f0fdfa;
+    color: #0d9488;
+    border: 1px solid #99f6e4;
+}
+
+.tag-instant {
+    background: #eff6ff;
+    color: #2563eb;
+    border: 1px solid #bfdbfe;
+}
+
+.tag-fast {
+    background: #f5f3ff;
+    color: #7c3aed;
+    border: 1px solid #ddd6fe;
+}
+
+/* Cell content formatting */
+.cell-sublabel {
+    font-size: 11px;
+    color: #64748b;
+    font-weight: 500;
+    margin-bottom: 2px;
+}
+
+.cell-amount-val {
+    font-size: 14px;
+    font-weight: 800;
+    color: #0f172a;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: -0.2px;
+}
+
+.cell-roi-val {
+    font-size: 14px;
+    font-weight: 800;
+    color: #0f172a;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.cell-tenure-val {
     font-size: 13px;
     font-weight: 600;
-    color: var(--navy-900);
+    color: #334155;
 }
 
-.cat-pill {
-    display: inline-block;
-    padding: 3px 8px;
-    font-size: 10px;
-    font-weight: 700;
-    border-radius: var(--radius-xs);
-    letter-spacing: 0.4px;
-}
-
-.cat-pill.cat-a {
-    background: var(--emerald-50);
-    color: var(--emerald-800);
-    border: 1px solid var(--emerald-200);
-}
-
-.cat-pill.cat-b {
-    background: var(--blue-50);
-    color: var(--blue-800);
-    border: 1px solid var(--blue-200);
-}
-
-.foir-pill {
-    display: inline-block;
-    font-family: 'JetBrains Mono', monospace;
+/* Action button matching reference image */
+.btn-view-offer {
+    padding: 7px 18px;
     font-size: 12px;
-    font-weight: 700;
-    color: var(--navy-900);
-    background: var(--navy-100);
-    padding: 2px 7px;
-    border-radius: var(--radius-xs);
+    font-weight: 600;
+    border-radius: 6px;
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    color: #475569;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+    outline: none;
 }
+
+.btn-view-offer:hover {
+    background: #f8fafc;
+    border-color: #94a3b8;
+    color: #0f172a;
+}
+
+tr.selected .btn-view-offer,
+.btn-view-offer.active {
+    background: var(--blue-600);
+    color: #ffffff;
+    border-color: var(--blue-600);
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+}
+
 
 /* =========================================================
    STEP 4: UNDERWRITING ACTION BAR
@@ -1884,210 +2150,184 @@ input:disabled {
 }
 
 /* =========================================================
-   RESULTS CARD (AFTER EXECUTION)
+   RESULTS CARD (AFTER EXECUTION) - MATCHING REFERENCE DESIGN
    ========================================================= */
 
 .results-card {
-    background: var(--bg-surface);
-    border: 1.5px solid var(--blue-200);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-lg);
-    padding: 22px 24px;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
     display: flex;
     flex-direction: column;
-    gap: 20px;
-    animation: fadeInSlideUp 0.35s ease-out;
-    transition: box-shadow 0.3s ease, border-color 0.3s ease, transform 0.3s ease;
+    gap: 16px;
+    width: 100%;
 }
 
-.results-card.result-highlight-pulse {
-    animation: resultGlowPulse 2.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@keyframes resultGlowPulse {
-    0% {
-        box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.7), var(--shadow-lg);
-        border-color: var(--blue-600);
-        transform: scale(0.995);
-    }
-
-    30% {
-        box-shadow: 0 0 0 10px rgba(37, 99, 235, 0.25), 0 14px 40px rgba(37, 99, 235, 0.28);
-        border-color: var(--blue-500);
-        transform: scale(1.006);
-    }
-
-    100% {
-        box-shadow: var(--shadow-lg);
-        border-color: var(--blue-200);
-        transform: scale(1);
-    }
-}
-
-@keyframes fadeInSlideUp {
-    from {
-        opacity: 0;
-        transform: translateY(12px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.results-header {
-    border-bottom: 1px solid var(--border-subtle);
-    padding-bottom: 14px;
-}
-
-.results-title-group {
+.decision-cards-stack {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 16px;
+    width: 100%;
 }
 
-.result-badge-wrap {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.result-badge {
-    font-size: 9.5px;
-    font-weight: 800;
-    letter-spacing: 0.8px;
-    color: var(--blue-700);
-    background: var(--blue-50);
-    border: 1px solid var(--blue-100);
-    padding: 2px 7px;
-    border-radius: var(--radius-xs);
-    font-family: 'JetBrains Mono', monospace;
-}
-
-.result-timestamp {
-    font-size: 10px;
-    color: var(--text-muted);
-}
-
-.result-lender-pill {
-    font-size: 12px;
-    color: var(--navy-800);
-    background: var(--navy-50);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-sm);
-    padding: 8px 12px;
-    line-height: 1.4;
-}
-
-/* 3 Primary Result Metrics */
-.results-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 14px;
-}
-
-.metric-card {
+.decision-card {
     background: #ffffff;
-    border: 1.5px solid var(--border-subtle);
-    border-radius: var(--radius-md);
-    padding: 16px;
+    border: 1px solid #e8ecf4;
+    border-radius: 16px;
+    padding: 22px 24px;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    transition: all var(--transition-fast);
+    gap: 14px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
-.metric-card.highlight {
-    grid-column: span 2;
-    background: linear-gradient(135deg, #f8faff 0%, #edf5ff 100%);
-    border-color: var(--blue-400);
-    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.08);
+.decision-card:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 4px 18px rgba(15, 23, 42, 0.07);
 }
 
-.metric-header {
+.decision-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
 }
 
-.metric-label {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.4px;
-}
-
-.metric-unit {
-    font-size: 10px;
-    font-weight: 500;
-    color: var(--text-muted);
-}
-
-.metric-tag {
-    font-size: 9.5px;
+.decision-label {
+    font-size: 12px;
     font-weight: 700;
-    padding: 2px 7px;
-    border-radius: var(--radius-full);
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
 }
 
-.metric-tag.normal {
-    background: var(--emerald-50);
-    color: var(--emerald-800);
-    border: 1px solid var(--emerald-200);
-}
-
-.metric-tag.high {
-    background: var(--amber-50);
-    color: var(--amber-800);
-    border: 1px solid var(--amber-200);
-}
-
-.metric-tag.critical {
-    background: var(--rose-50);
-    color: var(--rose-800);
-    border: 1px solid var(--rose-200);
-}
-
-.metric-tag.prime {
-    background: var(--blue-600);
-    color: #ffffff;
-}
-
-.metric-val-wrap {
+.decision-icon-badge {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
     display: flex;
-    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.decision-icon-badge.blue {
+    background: #eff6ff;
+    color: #2563eb;
+}
+
+.decision-icon-badge.slate {
+    background: #f1f5f9;
+    color: #475569;
+}
+
+.decision-amount-wrap {
+    display: flex;
+    align-items: baseline;
     gap: 6px;
 }
 
-.metric-val {
-    font-size: 22px;
+.decision-amount {
+    font-size: 32px;
     font-weight: 800;
-    color: var(--navy-950);
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    letter-spacing: -0.5px;
+    font-family: 'Plus Jakarta Sans', var(--font-sans);
+    line-height: 1.1;
+    letter-spacing: -0.6px;
     font-variant-numeric: tabular-nums;
 }
 
-.foir-bar-container {
+.decision-amount.blue {
+    color: #2563eb;
+}
+
+.decision-amount.dark {
+    color: #0f172a;
+}
+
+.decision-unit {
+    font-size: 14px;
+    font-weight: 500;
+    color: #64748b;
+}
+
+.decision-subline {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.decision-desc {
+    font-size: 13px;
+    color: #64748b;
+    font-weight: 400;
+}
+
+/* Status Pill matching "📈 Good" */
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 11.5px;
+    font-weight: 700;
+}
+
+.status-pill.good {
+    background: #ecfdf5;
+    color: #059669;
+}
+
+.status-pill.moderate {
+    background: #fffbeb;
+    color: #d97706;
+}
+
+.status-pill.strained {
+    background: #fef2f2;
+    color: #dc2626;
+}
+
+/* FOIR Progress Slider */
+.foir-slider-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.foir-progress-track {
     width: 100%;
     height: 6px;
-    background: var(--navy-100);
-    border-radius: var(--radius-full);
+    background: #f1f5f9;
+    border-radius: 999px;
     overflow: hidden;
 }
 
-.foir-bar-fill {
+.foir-progress-fill {
     height: 100%;
-    background: var(--emerald-500);
-    border-radius: var(--radius-full);
-    transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.3s;
+    background: #2563eb;
+    border-radius: 999px;
+    transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.3s;
 }
 
-.metric-desc {
-    font-size: 10.5px;
-    color: var(--text-muted);
+.foir-scale-labels {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+}
+
+.foir-scale-labels .scale-num {
+    color: #94a3b8;
+    font-weight: 500;
+}
+
+.foir-scale-labels .scale-limit {
+    color: #2563eb;
+    font-weight: 600;
 }
 
 /* Editable Loan Amount Box */

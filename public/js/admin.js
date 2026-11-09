@@ -28,6 +28,20 @@ const breNotice = document.getElementById("breNotice");
 const breRuleRows = document.getElementById("breRuleRows");
 const breEmpty = document.getElementById("breEmpty");
 
+// BRE Versioning Elements
+const breVersionBar = document.getElementById("breVersionBar");
+const breVersionSelect = document.getElementById("breVersionSelect");
+const breActiveStatusBadge = document.getElementById("breActiveStatusBadge");
+const breVersionMeta = document.getElementById("breVersionMeta");
+const breActivateVersionBtn = document.getElementById("breActivateVersionBtn");
+const breHistoryDialogBtn = document.getElementById("breHistoryDialogBtn");
+const breHistoryDialog = document.getElementById("breHistoryDialog");
+const breHistoryBankContext = document.getElementById("breHistoryBankContext");
+const breHistoryDialogMessage = document.getElementById("breHistoryDialogMessage");
+const breHistoryRows = document.getElementById("breHistoryRows");
+const closeBreHistoryDialogButton = document.getElementById("closeBreHistoryDialogButton");
+const closeBreHistoryBtn = document.getElementById("closeBreHistoryBtn");
+
 // BRE Rule Add / Edit Dialog Elements
 const breRuleDialog = document.getElementById("breRuleDialog");
 const breRuleForm = document.getElementById("breRuleForm");
@@ -205,6 +219,8 @@ let editingBreRuleId = null;
 let deletingBreRuleId = null;
 let breConditionMode = "range";
 let selectedBreFileText = "";
+let currentBreVersions = [];
+let selectedBreVersionId = null;
 
 const matrixPanel = document.getElementById("matrixPanel");
 const matrixFilter = document.getElementById("matrixFilter");
@@ -402,19 +418,21 @@ function showManagement(visible) {
 }
 
 function switchTab(tab) {
-    activeTab = tab === "matrix" ? "bre" : tab;
+    activeTab = tab;
     if (tabBreBtn) tabBreBtn.classList.toggle("active", activeTab === "bre");
-    if (tabMatrixBtn) tabMatrixBtn.classList.toggle("active", false);
+    if (tabMatrixBtn) tabMatrixBtn.classList.toggle("active", activeTab === "matrix");
     if (tabBanksBtn) tabBanksBtn.classList.toggle("active", activeTab === "banks");
     if (tabPincodesBtn) tabPincodesBtn.classList.toggle("active", activeTab === "pincodes");
 
     if (brePanel) brePanel.classList.toggle("hidden", activeTab !== "bre");
-    if (matrixPanel) matrixPanel.classList.add("hidden");
+    if (matrixPanel) matrixPanel.classList.toggle("hidden", activeTab !== "matrix");
     if (managementPanel) managementPanel.classList.toggle("hidden", activeTab !== "banks");
     if (pincodesPanel) pincodesPanel.classList.toggle("hidden", activeTab !== "pincodes");
 
     if (activeTab === "bre") {
         void initBreTab();
+    } else if (activeTab === "matrix") {
+        void loadMatrixRules();
     } else if (activeTab === "pincodes") {
         void initPincodesTab();
     } else {
@@ -1955,12 +1973,234 @@ async function initBreTab() {
     renderBreBanks();
 }
 
-async function loadBreRules(bankName) {
+async function loadBreVersions(bankName, selectVersionId = null) {
+    if (!bankName) {
+        currentBreVersions = [];
+        selectedBreVersionId = null;
+        if (breVersionBar) breVersionBar.style.display = "none";
+        return;
+    }
+
+    try {
+        const versions = await apiRequest(
+            `/api/admin/bre/versions?bank=${encodeURIComponent(bankName)}`,
+            {},
+            currentToken()
+        );
+
+        currentBreVersions = Array.isArray(versions) ? versions : [];
+
+        if (currentBreVersions.length === 0) {
+            if (breVersionBar) breVersionBar.style.display = "none";
+            selectedBreVersionId = null;
+            return;
+        }
+
+        if (breVersionBar) breVersionBar.style.display = "flex";
+
+        if (selectVersionId) {
+            selectedBreVersionId = Number(selectVersionId);
+        } else {
+            const activeVer = currentBreVersions.find(v => v.active);
+            selectedBreVersionId = activeVer ? activeVer.id : currentBreVersions[0].id;
+        }
+
+        if (breVersionSelect) {
+            breVersionSelect.replaceChildren();
+            for (const ver of currentBreVersions) {
+                const opt = document.createElement("option");
+                opt.value = String(ver.id);
+                opt.textContent = `${ver.version_tag || ('v' + ver.version_number)} ${ver.active ? '★ (Active Live)' : '(Inactive)'}`;
+                if (ver.id === selectedBreVersionId) {
+                    opt.selected = true;
+                }
+                breVersionSelect.appendChild(opt);
+            }
+        }
+
+        updateBreVersionBarUI();
+    } catch (error) {
+        console.error("Failed to load BRE versions:", error);
+    }
+}
+
+function updateBreVersionBarUI() {
+    const currentVer = currentBreVersions.find(v => v.id === selectedBreVersionId);
+    if (!currentVer) {
+        if (breVersionBar) breVersionBar.style.display = "none";
+        return;
+    }
+
+    if (breVersionBar) breVersionBar.style.display = "flex";
+
+    const isActive = Boolean(currentVer.active);
+
+    if (breActiveStatusBadge) {
+        breActiveStatusBadge.textContent = isActive ? "Active (Live in BRE)" : "Inactive (Archived)";
+        breActiveStatusBadge.className = `bre-version-pill ${isActive ? 'active' : 'inactive'}`;
+    }
+
+    if (breVersionMeta) {
+        const dateStr = currentVer.uploaded_at ? new Date(currentVer.uploaded_at).toLocaleString() : "";
+        breVersionMeta.textContent = `File: ${currentVer.filename} • ${currentVer.rule_count} rule${currentVer.rule_count === 1 ? '' : 's'}${dateStr ? ' • Uploaded: ' + dateStr : ''}`;
+    }
+
+    if (breActivateVersionBtn) {
+        if (isActive) {
+            breActivateVersionBtn.style.display = "none";
+        } else {
+            breActivateVersionBtn.style.display = "inline-flex";
+            breActivateVersionBtn.textContent = `⚡ Activate / Rollback to ${currentVer.version_tag || ('v' + currentVer.version_number)}`;
+        }
+    }
+}
+
+async function activateBreVersion(versionId) {
+    const vId = Number(versionId);
+    const targetVer = currentBreVersions.find(v => v.id === vId);
+    const verTag = targetVer ? (targetVer.version_tag || `v${targetVer.version_number}`) : `v#${vId}`;
+
+    if (!confirm(`Are you sure you want to activate version ${verTag}? This will make it the live rule set in the BRE engine and deactivate all other versions for this bank.`)) {
+        return;
+    }
+
+    if (breActivateVersionBtn) {
+        breActivateVersionBtn.disabled = true;
+        breActivateVersionBtn.textContent = "Activating...";
+    }
+
+    try {
+        const response = await apiRequest(
+            `/api/admin/bre/versions/${vId}/activate`,
+            { method: "POST" },
+            currentToken()
+        );
+
+        setMessage(breNotice, response.message || `Version ${verTag} is now active.`, "success");
+        if (breHistoryDialog && breHistoryDialog.open) {
+            breHistoryDialog.close();
+        }
+
+        const activeBank = breBankSelect ? breBankSelect.value : "";
+        if (activeBank) {
+            await loadBreRules(activeBank, vId);
+        }
+    } catch (error) {
+        if (handleAuthorizationError(error)) return;
+        setMessage(breNotice, error.message, "error");
+        if (breHistoryDialogMessage) setMessage(breHistoryDialogMessage, error.message, "error");
+    } finally {
+        if (breActivateVersionBtn) {
+            breActivateVersionBtn.disabled = false;
+        }
+    }
+}
+
+function openBreHistoryDialog() {
+    const activeBank = breBankSelect ? breBankSelect.value : "";
+    if (!activeBank) {
+        setMessage(breNotice, "Please select a partner bank first.", "error");
+        return;
+    }
+
+    if (breHistoryBankContext) {
+        breHistoryBankContext.textContent = `Partner Bank: ${activeBank} (${currentBreVersions.length} versions tracked)`;
+    }
+    if (breHistoryDialogMessage) setMessage(breHistoryDialogMessage, "", "");
+
+    renderBreHistoryTable();
+    if (breHistoryDialog) breHistoryDialog.showModal();
+}
+
+function renderBreHistoryTable() {
+    if (!breHistoryRows) return;
+    breHistoryRows.replaceChildren();
+
+    if (currentBreVersions.length === 0) {
+        const emptyRow = document.createElement("tr");
+        const emptyCell = document.createElement("td");
+        emptyCell.colSpan = 6;
+        emptyCell.className = "empty-list";
+        emptyCell.textContent = "No versions recorded yet for this bank.";
+        emptyRow.appendChild(emptyCell);
+        breHistoryRows.appendChild(emptyRow);
+        return;
+    }
+
+    for (const ver of currentBreVersions) {
+        const row = document.createElement("tr");
+
+        // Version tag
+        const verCell = document.createElement("td");
+        const badge = document.createElement("span");
+        badge.className = "version-tag-badge";
+        badge.textContent = ver.version_tag || `v${ver.version_number}`;
+        verCell.appendChild(badge);
+
+        // Filename
+        const fileCell = document.createElement("td");
+        fileCell.style.fontWeight = "600";
+        fileCell.style.color = "#1e293b";
+        fileCell.textContent = ver.filename || "rules.csv";
+
+        // Rules count
+        const countCell = document.createElement("td");
+        countCell.style.textAlign = "center";
+        countCell.textContent = String(ver.rule_count || 0);
+
+        // Uploaded at
+        const dateCell = document.createElement("td");
+        dateCell.style.color = "#64748b";
+        dateCell.style.fontSize = "12px";
+        dateCell.textContent = ver.uploaded_at ? new Date(ver.uploaded_at).toLocaleString() : "Initial baseline";
+
+        // Status badge
+        const statusCell = document.createElement("td");
+        statusCell.style.textAlign = "center";
+        const statusBadge = document.createElement("span");
+        if (ver.active) {
+            statusBadge.className = "version-history-active-badge";
+            statusBadge.textContent = "● Active (Live)";
+        } else {
+            statusBadge.className = "version-history-inactive-badge";
+            statusBadge.textContent = "Inactive";
+        }
+        statusCell.appendChild(statusBadge);
+
+        // Action
+        const actionCell = document.createElement("td");
+        actionCell.style.textAlign = "right";
+
+        if (ver.active) {
+            const liveText = document.createElement("span");
+            liveText.className = "current-live-indicator";
+            liveText.textContent = "✓ Current Live";
+            actionCell.appendChild(liveText);
+        } else {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "activate-version-btn";
+            btn.textContent = "Activate / Rollback";
+            btn.addEventListener("click", () => activateBreVersion(ver.id));
+            actionCell.appendChild(btn);
+        }
+
+        row.append(verCell, fileCell, countCell, dateCell, statusCell, actionCell);
+        breHistoryRows.appendChild(row);
+    }
+}
+
+async function loadBreRules(bankName, specificVersionId = null) {
     if (!bankName) {
         currentBreRules = [];
+        currentBreVersions = [];
+        selectedBreVersionId = null;
+        if (breVersionBar) breVersionBar.style.display = "none";
         renderBreRules([]);
         return;
     }
+
+    await loadBreVersions(bankName, specificVersionId);
 
     if (breEmpty) {
         breEmpty.textContent = `Loading rules for ${bankName} from database...`;
@@ -1969,8 +2209,12 @@ async function loadBreRules(bankName) {
     if (breRuleRows) breRuleRows.replaceChildren();
 
     try {
+        const queryParams = [`bank=${encodeURIComponent(bankName)}`];
+        if (selectedBreVersionId) {
+            queryParams.push(`versionId=${encodeURIComponent(selectedBreVersionId)}`);
+        }
         const records = await apiRequest(
-            `/api/admin/bre/rules?bank=${encodeURIComponent(bankName)}`,
+            `/api/admin/bre/rules?${queryParams.join("&")}`,
             {},
             currentToken()
         );
@@ -2706,7 +2950,8 @@ async function confirmBreUpload() {
                 body: JSON.stringify({
                     csvContent: selectedBreFileText,
                     defaultBank: currentBank,
-                    overrideBank: shouldOverride
+                    overrideBank: shouldOverride,
+                    filename: selectedBreFileName || "uploaded_rules.csv"
                 }),
                 timeout: 300000
             },
@@ -2766,6 +3011,34 @@ if (breBankSelect) {
     breBankSelect.addEventListener("change", () => {
         updateBreToolbar();
         void loadBreRules(breBankSelect.value);
+    });
+}
+
+if (breVersionSelect) {
+    breVersionSelect.addEventListener("change", () => {
+        selectedBreVersionId = Number(breVersionSelect.value);
+        updateBreVersionBarUI();
+        const activeBank = breBankSelect ? breBankSelect.value : "";
+        if (activeBank) {
+            void loadBreRules(activeBank, selectedBreVersionId);
+        }
+    });
+}
+
+if (breActivateVersionBtn) {
+    breActivateVersionBtn.addEventListener("click", () => {
+        if (selectedBreVersionId) {
+            void activateBreVersion(selectedBreVersionId);
+        }
+    });
+}
+
+if (breHistoryDialogBtn) breHistoryDialogBtn.addEventListener("click", openBreHistoryDialog);
+if (closeBreHistoryDialogButton) closeBreHistoryDialogButton.addEventListener("click", () => breHistoryDialog.close());
+if (closeBreHistoryBtn) closeBreHistoryBtn.addEventListener("click", () => breHistoryDialog.close());
+if (breHistoryDialog) {
+    breHistoryDialog.addEventListener("click", event => {
+        if (event.target === breHistoryDialog) breHistoryDialog.close();
     });
 }
 

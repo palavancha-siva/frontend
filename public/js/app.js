@@ -34,9 +34,12 @@
     const emptyLendersPrompt = document.getElementById("emptyLendersPrompt");
     const lendersLoading = document.getElementById("lendersLoading");
     const lendersNotFound = document.getElementById("lendersNotFound");
+    const lendersNotFoundTitle = document.getElementById("lendersNotFoundTitle");
     const lendersNotFoundMessage = document.getElementById("lendersNotFoundMessage");
     const lendersTableContainer = document.getElementById("lendersTableContainer");
+    const lendersTable = document.getElementById("lendersTable");
     const lendersTableBody = document.getElementById("lendersTableBody");
+    const lenderSelectionHint = document.getElementById("lenderSelectionHint");
     const lenderCountBadge = document.getElementById("lenderCountBadge");
     const lenderSelectError = document.getElementById("lenderSelectError");
 
@@ -77,14 +80,23 @@
     // Terminal / Pre-calculation Card
     const terminalIntroCard = document.getElementById("terminalIntroCard");
 
-    // Result Elements
+    // Result Elements (Reference Image Design)
     const resultCard = document.getElementById("resultCard");
     const evaluationTimestamp = document.getElementById("evaluationTimestamp");
     const resultLenderPill = document.getElementById("resultLenderPill");
+    const resultAvailableEmi = document.getElementById("resultAvailableEmi");
+    const resultEmiStatusTag = document.getElementById("resultEmiStatusTag");
+    const resultEmiStatusText = document.getElementById("resultEmiStatusText");
+    const resultMaxLoan = document.getElementById("resultMaxLoan");
+    const resultLoanTenureSubtext = document.getElementById("resultLoanTenureSubtext");
+    const resultTotalFoirAmount = document.getElementById("resultTotalFoirAmount");
+    const resultFoirProgressBar = document.getElementById("resultFoirProgressBar");
+    const resultFoirLimitText = document.getElementById("resultFoirLimitText");
+
+    // Legacy / compatibility references
     const resultCurrentFoir = document.getElementById("resultCurrentFoir");
     const resultFoirBadge = document.getElementById("resultFoirBadge");
     const foirBarFill = document.getElementById("foirBarFill");
-    const resultAvailableEmi = document.getElementById("resultAvailableEmi");
     const resultEmiDesc = document.getElementById("resultEmiDesc");
     const finalLoanAmountInput = document.getElementById("finalLoanAmountInput");
     const resultMaxLoanCap = document.getElementById("resultMaxLoanCap");
@@ -122,6 +134,7 @@
         lenders: [],            // List of top fetched mappings
         selectedLenderIndex: -1,// -1 means none selected
         selectedLender: null,   // { bank_name, cat, foir, ... }
+        isEligibilityEvaluated: false, // true only after clicking Check FOIR
         proposedRate: null,
         loanTenure: null,
         creditCardsList: [{ id: 1, amount: 0, isBt: false }],
@@ -147,10 +160,16 @@
     // ------------------------------------------------------------
     function init() {
         checkSystemHealth();
+        enableStep2();
+        enableStep3();
         renderCcRows();
         renderEmiRows();
         setupEventListeners();
         disableNumberInputWheelScroll();
+        if (lendersSection) {
+            lendersSection.classList.add("hidden");
+        }
+        updateStep4State();
     }
 
     // ------------------------------------------------------------
@@ -186,6 +205,7 @@
         });
 
         // Step 1: Monthly Salary
+        let salaryRefreshTimer = null;
         salaryInput.addEventListener("input", () => {
             const val = parseFloat(salaryInput.value);
             if (!isNaN(val) && val > 0) {
@@ -194,19 +214,32 @@
             } else {
                 state.monthlySalary = null;
             }
-            onSalaryOrCompanyChanged();
+            updateStep4State();
+
+            // When salary is entered or updated and company is present, query lenders
+            if (state.companyName && state.companyName.trim().length >= 2) {
+                clearTimeout(salaryRefreshTimer);
+                salaryRefreshTimer = setTimeout(() => {
+                    fetchCompanyLenders(state.companyName.trim());
+                    if (resultCard && !resultCard.classList.contains("hidden") && state.selectedLender && state.isEligibilityEvaluated) {
+                        executeUnderwritingCalculation();
+                    }
+                }, 350);
+            }
         });
 
-        // Step 1: Company Input with Autocomplete
+        // Step 1: Company Input with Autocomplete & Auto-Lender Matching
         companyInput.addEventListener("input", () => {
             const query = companyInput.value.trim();
             state.companyName = query;
             companyError.textContent = "";
+            state.isEligibilityEvaluated = false; // Reset to lenders list only
+            if (lendersTable) lendersTable.classList.add("company-only-mode");
 
             clearTimeout(companySearchTimer);
             if (query.length < 1) {
                 hideCompanySuggestions();
-                onSalaryOrCompanyChanged();
+                onCompanyCleared();
                 return;
             }
 
@@ -214,7 +247,15 @@
                 fetchCompanySuggestions(query);
             }, 250);
 
-            onSalaryOrCompanyChanged();
+            // Immediately query available lenders for this company even without salary
+            clearTimeout(lenderFetchTimer);
+            if (query.length >= 2) {
+                lenderFetchTimer = setTimeout(() => {
+                    fetchCompanyLenders(query);
+                }, 350);
+            } else {
+                onCompanyCleared();
+            }
         });
 
         companyInput.addEventListener("blur", () => {
@@ -261,7 +302,9 @@
                         pincodeStatusBadge.innerHTML = "";
                     }
                     if (hadValidPin || pin.length === 0) {
-                        onSalaryOrCompanyChanged();
+                        if (state.companyName && state.companyName.trim().length >= 2) {
+                            fetchCompanyLenders(state.companyName.trim());
+                        }
                     }
                 }
             });
@@ -358,6 +401,9 @@
 
         if (state.selectedLender && state.selectedLender.bank_name.toLowerCase().includes("icici")) {
             await updateIciciHomeLoanFoir();
+            if (state.isEligibilityEvaluated) {
+                await executeUnderwritingCalculation(false);
+            }
         }
     }
 
@@ -405,9 +451,9 @@
                 }
             }
 
-            // If Step 4 results are already open, recalculate underwriting with new DB values
-            if (resultCard && !resultCard.classList.contains("hidden")) {
-                onCheckFoirClicked();
+            // If Step 4 results are already open, recalculate underwriting with new DB values smoothly
+            if (resultCard && !resultCard.classList.contains("hidden") && state.isEligibilityEvaluated) {
+                await executeUnderwritingCalculation(false);
             }
         } catch (_err) {
             // Silently retain current state on network error
@@ -523,8 +569,10 @@
         companyInput.value = name;
         state.companyName = name;
         companyError.textContent = "";
+        state.isEligibilityEvaluated = false; // Reset to lenders list only
+        if (lendersTable) lendersTable.classList.add("company-only-mode");
         hideCompanySuggestions();
-        onSalaryOrCompanyChanged(true); // immediate fetch
+        fetchCompanyLenders(name);
     }
 
     // ------------------------------------------------------------
@@ -579,41 +627,57 @@
                 `;
             }
 
-            onSalaryOrCompanyChanged(true);
+            if (state.companyName && state.companyName.trim().length >= 2) {
+                fetchCompanyLenders(state.companyName.trim());
+            }
         } catch (_err) {
             pincodeLoading.classList.add("hidden");
         }
     }
 
     // ------------------------------------------------------------
-    // STEP 1: FETCH TOP ELIGIBLE LENDERS
+    // STEP 1: COMPANY LENDERS LOOKUP & HANDLERS
+    // (Fetches and displays available lenders for company even without salary)
     // ------------------------------------------------------------
-    function onSalaryOrCompanyChanged(immediate = false) {
-        clearTimeout(lenderFetchTimer);
-
-        resetLenderSelection();
-
-        const hasSalary = state.monthlySalary !== null && state.monthlySalary > 0;
-        const hasCompany = state.companyName && state.companyName.trim().length >= 2;
-
-        if (!hasSalary || !hasCompany) {
-            emptyLendersPrompt.classList.remove("hidden");
-            lendersLoading.classList.add("hidden");
-            lendersNotFound.classList.add("hidden");
-            lendersTableContainer.classList.add("hidden");
-            lenderCountBadge.textContent = "Awaiting Input";
+    async function fetchCompanyLenders(companyName) {
+        if (!companyName || companyName.trim().length < 2) {
+            onCompanyCleared();
             return;
         }
 
-        emptyLendersPrompt.classList.add("hidden");
+        // Show lenders section with loading state
+        if (lendersSection) lendersSection.classList.remove("hidden");
+        if (emptyLendersPrompt) emptyLendersPrompt.classList.add("hidden");
         lendersLoading.classList.remove("hidden");
         lendersNotFound.classList.add("hidden");
         lendersTableContainer.classList.add("hidden");
+        lenderCountBadge.textContent = "Matching...";
 
-        const delay = immediate ? 0 : 350;
-        lenderFetchTimer = setTimeout(() => {
-            fetchTopEligibleLenders(state.companyName.trim());
-        }, delay);
+        const lenders = await fetchTopEligibleLenders(companyName.trim());
+
+        if (lenderSelectionHint) {
+            if (state.isEligibilityEvaluated) {
+                lenderSelectionHint.textContent = `Commercial lenders evaluated for "${companyName}". Select any bank to inspect underwriting terms.`;
+            } else {
+                lenderSelectionHint.textContent = `Available lenders mapped for "${companyName}". Complete your details and click "Check FOIR & Credit Eligibility" to compute policy limits.`;
+            }
+        }
+
+        updateStep4State();
+    }
+
+    function onCompanyCleared() {
+        resetLenderSelection();
+        state.lenders = [];
+        state.isEligibilityEvaluated = false;
+        if (lendersTable) lendersTable.classList.add("company-only-mode");
+        if (lendersSection) lendersSection.classList.add("hidden");
+        if (emptyLendersPrompt) emptyLendersPrompt.classList.add("hidden");
+        lendersLoading.classList.add("hidden");
+        lendersNotFound.classList.add("hidden");
+        lendersTableContainer.classList.add("hidden");
+        lenderCountBadge.textContent = "Awaiting Company";
+        updateStep4State();
     }
 
     async function fetchTopEligibleLenders(companyName) {
@@ -628,13 +692,13 @@
             if (res.status === 404) {
                 state.lenders = [];
                 showLendersNotFound(`No institutional lender mappings configured for "${companyName}".`);
-                return;
+                return [];
             }
 
             if (!res.ok) {
                 state.lenders = [];
                 showLendersNotFound("Could not retrieve lenders. Please try again.");
-                return;
+                return [];
             }
 
             const data = await res.json();
@@ -643,7 +707,7 @@
             if (rawMappings.length === 0) {
                 state.lenders = [];
                 showLendersNotFound(`No active commercial lenders mapped for "${companyName}".`);
-                return;
+                return [];
             }
 
             // Sort High to Low based on FOIR %
@@ -654,30 +718,126 @@
                 return String(a && a.bank_name || "").localeCompare(String(b && b.bank_name || ""));
             });
             renderLendersTable(state.lenders);
+            return state.lenders;
 
         } catch (error) {
             lendersLoading.classList.add("hidden");
             state.lenders = [];
             showLendersNotFound("Connection error while querying bank matrix.");
+            return [];
         }
     }
 
-    function showLendersNotFound(msg) {
-        emptyLendersPrompt.classList.add("hidden");
+    function showLendersNotFound(msg, title) {
+        if (lendersSection) lendersSection.classList.remove("hidden");
+        if (emptyLendersPrompt) emptyLendersPrompt.classList.add("hidden");
         lendersTableContainer.classList.add("hidden");
         lendersNotFound.classList.remove("hidden");
-        lendersNotFoundMessage.textContent = msg;
-        lenderCountBadge.textContent = "0 Lenders";
+
+        const hasSalary = state.monthlySalary !== null && state.monthlySalary > 0;
+        if (!hasSalary) {
+            if (lendersNotFoundTitle) lendersNotFoundTitle.textContent = "Please Enter Net Monthly Salary";
+            lendersNotFoundMessage.textContent = `Please enter your net monthly salary above to check available lenders for "${state.companyName}".`;
+            lenderCountBadge.textContent = "Please Enter Salary";
+            if (actionHint) {
+                actionHint.textContent = `Please enter net monthly salary to evaluate lenders for "${state.companyName}"`;
+                actionHint.style.color = "#d97706";
+            }
+        } else {
+            if (lendersNotFoundTitle) lendersNotFoundTitle.textContent = title || "No Eligible Lenders Found";
+            lendersNotFoundMessage.textContent = msg;
+            lenderCountBadge.textContent = "0 Lenders";
+        }
     }
 
     // ------------------------------------------------------------
-    // RENDER LENDERS TABLE WITH BANK BRANDING & FINNABLE RULES
+    // RENDER LENDERS MARKETPLACE (MATCHING REFERENCE DESIGN)
     // ------------------------------------------------------------
+    function getBankMarketplaceDetails(name) {
+        const lower = String(name || "").toLowerCase();
+        if (lower.includes("hdfc")) {
+            return { roi: "10.49% p.a.", tenure: "12 – 84 Months", tag: "Best Rate", tagClass: "tag-best-rate", rateNum: 10.49 };
+        }
+        if (lower.includes("sbi") || lower.includes("state bank")) {
+            return { roi: "10.75% p.a.", tenure: "12 – 60 Months", tag: "High Eligibility", tagClass: "tag-high-eligibility", rateNum: 10.75 };
+        }
+        if (lower.includes("icici")) {
+            return { roi: "10.85% p.a.", tenure: "12 – 72 Months", tag: "Popular", tagClass: "tag-popular", rateNum: 10.85 };
+        }
+        if (lower.includes("bajaj")) {
+            return { roi: "11.25% p.a.", tenure: "12 – 60 Months", tag: "Instant Disbursal", tagClass: "tag-instant", rateNum: 11.25 };
+        }
+        if (lower.includes("kotak")) {
+            return { roi: "11.75% p.a.", tenure: "12 – 60 Months", tag: "Fast Approval", tagClass: "tag-fast", rateNum: 11.75 };
+        }
+        if (lower.includes("axis")) {
+            return { roi: "10.99% p.a.", tenure: "12 – 60 Months", tag: "Popular", tagClass: "tag-popular", rateNum: 10.99 };
+        }
+        if (lower.includes("standard") || lower.includes("scb")) {
+            return { roi: "11.49% p.a.", tenure: "12 – 60 Months", tag: "High Eligibility", tagClass: "tag-high-eligibility", rateNum: 11.49 };
+        }
+        if (lower.includes("finnable")) {
+            return { roi: "12.00% p.a.", tenure: "12 – 48 Months", tag: "Flexible Policy", tagClass: "tag-instant", rateNum: 12.00 };
+        }
+        if (lower.includes("poonawalla")) {
+            return { roi: "11.50% p.a.", tenure: "12 – 60 Months", tag: "Fast Disbursal", tagClass: "tag-fast", rateNum: 11.50 };
+        }
+        if (lower.includes("incrid") || lower.includes("incred")) {
+            return { roi: "12.50% p.a.", tenure: "12 – 60 Months", tag: "Open Market", tagClass: "tag-popular", rateNum: 12.50 };
+        }
+        if (lower.includes("chola")) {
+            return { roi: "12.25% p.a.", tenure: "12 – 60 Months", tag: "Specialist", tagClass: "tag-best-rate", rateNum: 12.25 };
+        }
+        return { roi: "11.50% p.a.", tenure: "12 – 60 Months", tag: "Eligible Offer", tagClass: "tag-popular", rateNum: 11.50 };
+    }
+
+    function calculateLenderLoanAmount(lender) {
+        if (!state.monthlySalary || state.monthlySalary <= 0) {
+            return "₹0";
+        }
+        const foirPercent = Number(lender.foir) || 60;
+        const cardPercent = Number(lender.cc_obligation_percent) || 5;
+        const monthlyCcObligation = Math.round(((state.ccObligations || 0) * (cardPercent / 100)) * 100) / 100;
+        const totalObligations = monthlyCcObligation + (state.emiObligations || 0);
+
+        const maxAllowedEmi = state.monthlySalary * (foirPercent / 100);
+        const availableEmi = Math.max(0, maxAllowedEmi - totalObligations);
+
+        const details = getBankMarketplaceDetails(lender.bank_name);
+        const rate = state.proposedRate !== null && state.proposedRate > 0 ? state.proposedRate : details.rateNum;
+        const tenure = state.loanTenure !== null && state.loanTenure > 0 ? state.loanTenure : 48;
+
+        let emiPerLakh = 0;
+        if (rate === 0) {
+            emiPerLakh = 100000 / tenure;
+        } else {
+            const monthlyRate = rate / 12 / 100;
+            const factor = Math.pow(1 + monthlyRate, tenure);
+            emiPerLakh = Math.round(100000 * monthlyRate * factor / (factor - 1));
+        }
+
+        const maxLoanAmount = availableEmi > 0 && emiPerLakh > 0
+            ? Math.round((availableEmi / emiPerLakh) * 100000)
+            : 0;
+
+        return `₹${maxLoanAmount.toLocaleString("en-IN")}`;
+    }
+
     function renderLendersTable(lenders) {
+        if (lendersSection) lendersSection.classList.remove("hidden");
         lendersNotFound.classList.add("hidden");
-        emptyLendersPrompt.classList.add("hidden");
+        if (emptyLendersPrompt) emptyLendersPrompt.classList.add("hidden");
         lendersTableContainer.classList.remove("hidden");
-        lenderCountBadge.textContent = `${lenders.length} ${lenders.length === 1 ? 'Lender' : 'Lenders'}`;
+
+        if (lendersTable) {
+            if (state.isEligibilityEvaluated) {
+                lendersTable.classList.remove("company-only-mode");
+                lenderCountBadge.textContent = `${lenders.length} ${lenders.length === 1 ? 'Lender' : 'Lenders'}`;
+            } else {
+                lendersTable.classList.add("company-only-mode");
+                lenderCountBadge.textContent = `${lenders.length} Available ${lenders.length === 1 ? 'Lender' : 'Lenders'}`;
+            }
+        }
 
         lendersTableBody.innerHTML = "";
 
@@ -688,30 +848,44 @@
 
             const initials = getBankInitials(lender.bank_name);
             const bankClass = getBankClass(lender.bank_name);
+            const logoHtml = getBankLogoHtml(lender.bank_name, initials);
+            const details = getBankMarketplaceDetails(lender.bank_name);
+            const loanAmountStr = calculateLenderLoanAmount(lender);
             const catLabel = (lender.cat || "Standard").toUpperCase();
             const catClass = catLabel.includes("A") || catLabel.includes("TIER 1") ? "cat-a" : "cat-b";
+            const foirVal = Number(lender.foir) || 0;
 
             tr.innerHTML = `
-                <td class="col-select">
-                    <input
-                        type="radio"
-                        name="selectedLender"
-                        id="radio_lender_${index}"
-                        value="${index}"
-                        aria-label="Select ${escapeHtml(lender.bank_name)}"
-                    >
-                </td>
-                <td class="col-bank">
+                <td class="col-lender">
                     <div class="bank-cell">
-                        <span class="bank-avatar ${bankClass}">${escapeHtml(initials)}</span>
-                        <span class="bank-name-text">${escapeHtml(lender.bank_name)}</span>
+                        <div class="bank-avatar bank-logo-avatar ${bankClass}" title="${escapeHtml(lender.bank_name)}">
+                            ${logoHtml}
+                        </div>
+                        <div class="bank-info-wrap">
+                            <span class="bank-name-text">${escapeHtml(lender.bank_name)}</span>
+                            <span class="lender-feature-tag ${details.tagClass}">${escapeHtml(details.tag)}</span>
+                        </div>
                     </div>
                 </td>
                 <td class="col-cat">
                     <span class="cat-pill ${catClass}">${escapeHtml(catLabel)}</span>
                 </td>
                 <td class="col-foir">
-                    <span class="foir-pill">${Number(lender.foir)}%</span>
+                    <span class="foir-pill">${foirVal}%</span>
+                </td>
+                <td class="col-amount">
+                    <div class="cell-sublabel">Up to</div>
+                    <div class="cell-amount-val">${escapeHtml(loanAmountStr)}</div>
+                </td>
+                <td class="col-roi">
+                    <div class="cell-roi-val">${escapeHtml(details.roi)}</div>
+                    <div class="cell-sublabel">Starting at</div>
+                </td>
+                <td class="col-tenure">
+                    <div class="cell-tenure-val">${escapeHtml(details.tenure)}</div>
+                </td>
+                <td class="col-action">
+                    <button type="button" class="btn-view-offer">View Offer</button>
                 </td>
             `;
 
@@ -719,30 +893,159 @@
                 selectLender(index);
             });
 
-            const radio = tr.querySelector('input[type="radio"]');
-            radio.addEventListener("change", (e) => {
-                e.stopPropagation();
-                selectLender(index);
-            });
+            const actionBtn = tr.querySelector('.btn-view-offer');
+            if (actionBtn) {
+                actionBtn.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    selectLender(index);
+                });
+            }
 
             lendersTableBody.appendChild(tr);
         });
 
-        state.selectedLenderIndex = -1;
-        state.selectedLender = null;
-        if (iciciHomeLoanPanel) {
-            iciciHomeLoanPanel.classList.add("hidden");
+        // Preserve selected lender if valid
+        if (state.selectedLenderIndex >= 0 && state.selectedLenderIndex < lenders.length) {
+            const preservedIndex = state.selectedLenderIndex;
+            const rows = lendersTableBody.querySelectorAll(".lender-row");
+            if (rows[preservedIndex]) {
+                rows[preservedIndex].classList.add("selected");
+                const btn = rows[preservedIndex].querySelector('.btn-view-offer');
+                if (btn) {
+                    btn.classList.add("active");
+                    btn.textContent = "Selected ✓";
+                }
+            }
+        } else {
+            state.selectedLenderIndex = -1;
+            state.selectedLender = null;
+            if (iciciHomeLoanPanel) {
+                iciciHomeLoanPanel.classList.add("hidden");
+            }
+            state.hasHomeLoan = false;
+            if (homeLoanNoBtn) homeLoanNoBtn.classList.add("active");
+            if (homeLoanYesBtn) homeLoanYesBtn.classList.remove("active");
         }
-        state.hasHomeLoan = false;
-        if (homeLoanNoBtn) homeLoanNoBtn.classList.add("active");
-        if (homeLoanYesBtn) homeLoanYesBtn.classList.remove("active");
+    }
+
+    function getBankLogoHtml(name, initials) {
+        if (!name) name = "";
+        const lower = name.toLowerCase().trim();
+        if (!initials) initials = getBankInitials(name);
+
+        let logoSrc = "";
+
+        // 1. HDFC Bank (Official exact reference asset)
+        if (lower.includes("hdfc")) {
+            logoSrc = "/assets/bank-logos/hdfc_exact.png";
+        }
+        // 2. SBI / State Bank of India (Official keyhole emblem)
+        else if (lower.includes("sbi") || lower.includes("state bank")) {
+            logoSrc = "/assets/bank-logos/sbi_exact.png";
+        }
+        // 3. ICICI Bank (Official orange & maroon 'i' oval brandmark)
+        else if (lower.includes("icici")) {
+            logoSrc = "/assets/bank-logos/icici_exact.png";
+        }
+        // 4. Bajaj Finance / Bajaj Finserv (Official blue squircle monogram)
+        else if (lower.includes("bajaj")) {
+            logoSrc = "/assets/bank-logos/bajaj_exact.png";
+        }
+        // 5. Kotak Mahindra Bank (Official dark blue infinity disc with red vertical bar)
+        else if (lower.includes("kotak")) {
+            logoSrc = "/assets/bank-logos/kotak_exact.png";
+        }
+        // 6. Axis Bank (Official burgundy chevron emblem)
+        else if (lower.includes("axis")) {
+            logoSrc = "/assets/bank-logos/axis_symbol.svg";
+        }
+        // 7. Bank of Baroda (Official Baroda Sun emblem)
+        else if (lower.includes("baroda") || lower.includes("bob")) {
+            logoSrc = "/assets/bank-logos/baroda_symbol.png";
+        }
+        // 8. Tata Capital (Official Tata Group monogram)
+        else if (lower.includes("tata")) {
+            logoSrc = "/assets/bank-logos/tata.svg";
+        }
+        // 9. IDFC FIRST Bank (Official maroon tile emblem)
+        else if (lower.includes("idfc")) {
+            logoSrc = "/assets/bank-logos/idfc.svg";
+        }
+        // 10. IndusInd Bank (Official charging bull emblem)
+        else if (lower.includes("indusind")) {
+            logoSrc = "/assets/official-svgs/indusind.svg";
+        }
+        // 11. Yes Bank (Official red tick brandmark)
+        else if (lower.includes("yes bank") || lower === "yes") {
+            logoSrc = "/assets/bank-logos/yes_bank_symbol.png";
+        }
+        // 12. Canara Bank (Official interlocking triangles)
+        else if (lower.includes("canara")) {
+            logoSrc = "/assets/bank-logos/canara.svg";
+        }
+        // 13. Hero FinCorp (Official 3D geometric emblem)
+        else if (lower.includes("hero")) {
+            logoSrc = "/assets/bank-logos/hero.svg";
+        }
+        // 14. Muthoot Finance (Official red circular emblem)
+        else if (lower.includes("muthoot")) {
+            logoSrc = "/assets/bank-logos/muthoot_symbol.png";
+        }
+        // 15. L&T Finance (Official Larsen & Toubro emblem)
+        else if (lower.includes("l&t") || lower.includes("l and t")) {
+            logoSrc = "/assets/bank-logos/lt.svg";
+        }
+        // 16. Piramal Finance (Official faceted diamond emblem)
+        else if (lower.includes("piramal")) {
+            logoSrc = "/assets/official-svgs/piramal.svg";
+        }
+        // 17. Cholamandalam / Chola (Official flower disc emblem)
+        else if (lower.includes("chola") || lower.includes("cholamandalam")) {
+            logoSrc = "/assets/official-svgs/cholamandalam.svg";
+        }
+        // 18. South Indian Bank (Official feather brandmark)
+        else if (lower.includes("south indian")) {
+            logoSrc = "/assets/official-svgs/south_indian_bank_official.svg";
+        }
+        // 19. Poonawalla Fincorp (Official butterfly monogram)
+        else if (lower.includes("poonawalla")) {
+            logoSrc = "/assets/bank-logos/poonawalla_symbol.png";
+        }
+        // 20. Aditya Birla Capital (Official sunburst emblem)
+        else if (lower.includes("aditya") || lower.includes("birla")) {
+            logoSrc = "/assets/bank-logos/aditya_birla.ico";
+        }
+        // 21. KreditBee (Official app emblem)
+        else if (lower.includes("kreditbee") || lower.includes("kredit bee")) {
+            logoSrc = "/assets/bank-logos/kreditbee.png";
+        }
+        // 22. Fibe / EarlySalary (Official app emblem)
+        else if (lower.includes("fibe") || lower.includes("earlysalary")) {
+            logoSrc = "/assets/bank-logos/fibe.png";
+        }
+        // 23. InCred / INCRID (Official app emblem)
+        else if (lower.includes("incred") || lower.includes("incrid")) {
+            logoSrc = "/assets/bank-logos/incred.ico";
+        }
+        // 24. Finnable (Official app emblem)
+        else if (lower.includes("finnable")) {
+            logoSrc = "/assets/bank-logos/finnable.ico";
+        }
+
+        if (logoSrc) {
+            return `<img src="${logoSrc}" class="bank-logo-img" alt="${escapeHtml(name)}" loading="lazy" onerror="this.style.display='none'; const fb = this.nextElementSibling; if(fb) fb.style.display='flex';" /><span class="bank-fallback-initials" style="display:none;">${escapeHtml(initials)}</span>`;
+        }
+
+        return `<span class="bank-fallback-initials">${escapeHtml(initials)}</span>`;
     }
 
     function getBankInitials(name) {
         if (!name) return "BK";
-        if (name.toLowerCase().includes("finnable")) return "FIN";
-        if (name.toLowerCase().includes("incrid") || name.toLowerCase().includes("incred")) return "INC";
-        if (name.toLowerCase().includes("poonawalla")) return "PWF";
+        const lower = name.toLowerCase();
+        if (lower.includes("finnable")) return "FIN";
+        if (lower.includes("incrid") || lower.includes("incred")) return "INC";
+        if (lower.includes("poonawalla")) return "PWF";
+        if (lower.includes("bajaj")) return "BAJ";
         const cleaned = name.replace(/bank/gi, "").trim();
         if (cleaned.length <= 4) return cleaned.toUpperCase();
         const parts = cleaned.split(/\s+/);
@@ -758,6 +1061,7 @@
         if (lower.includes("finnable")) return "bank-finnable";
         if (lower.includes("incrid") || lower.includes("incred")) return "bank-incred";
         if (lower.includes("poonawalla")) return "bank-poonawalla";
+        if (lower.includes("bajaj")) return "bank-bajaj";
         if (lower.includes("hdfc")) return "bank-hdfc";
         if (lower.includes("icici")) return "bank-icici";
         if (lower.includes("sbi") || lower.includes("state bank")) return "bank-sbi";
@@ -770,7 +1074,7 @@
     // ------------------------------------------------------------
     // SELECT LENDER (TRIGGERS STEP 2 ENABLING)
     // ------------------------------------------------------------
-    function selectLender(index) {
+    function selectLender(index, autoScroll = false) {
         if (!state.lenders[index]) return;
 
         state.selectedLenderIndex = index;
@@ -779,13 +1083,19 @@
 
         const rows = lendersTableBody.querySelectorAll(".lender-row");
         rows.forEach((r, idx) => {
-            const radio = r.querySelector('input[type="radio"]');
+            const btn = r.querySelector('.btn-view-offer');
             if (idx === index) {
                 r.classList.add("selected");
-                if (radio) radio.checked = true;
+                if (btn) {
+                    btn.classList.add("active");
+                    btn.textContent = "Selected ✓";
+                }
             } else {
                 r.classList.remove("selected");
-                if (radio) radio.checked = false;
+                if (btn) {
+                    btn.classList.remove("active");
+                    btn.textContent = "View Offer";
+                }
             }
         });
 
@@ -802,6 +1112,16 @@
         }
 
         enableStep2();
+
+        if (state.isEligibilityEvaluated && state.monthlySalary && state.monthlySalary > 0) {
+            executeUnderwritingCalculation(autoScroll);
+        } else {
+            hideResults();
+            if (actionHint) {
+                actionHint.textContent = `Selected ${state.selectedLender.bank_name}. Enter net monthly salary above and click "Check FOIR & Credit Eligibility" to compute borrowing limits.`;
+                actionHint.style.color = "#2563eb";
+            }
+        }
     }
 
     function resetLenderSelection() {
@@ -816,8 +1136,6 @@
         if (homeLoanNoBtn) homeLoanNoBtn.classList.add("active");
         if (homeLoanYesBtn) homeLoanYesBtn.classList.remove("active");
 
-        disableStep2();
-        disableStep3();
         updateStep4State();
         hideResults();
     }
@@ -827,53 +1145,35 @@
     // ------------------------------------------------------------
     function enableStep2() {
         step2Card.classList.remove("disabled");
-        step2Lock.textContent = "✓ Active";
-        step2Lock.className = "step-lock-tag active";
+        if (step2Lock) {
+            step2Lock.textContent = "";
+            step2Lock.className = "hidden";
+        }
 
         proposedRateInput.disabled = false;
         loanTenureInput.disabled = false;
 
-        // Inputs are left blank for manual entry by user
-        updateStep3State();
         updateStep4State();
     }
 
     function disableStep2() {
-        step2Card.classList.add("disabled");
-        step2Lock.textContent = "Locked";
-        step2Lock.className = "step-lock-tag";
-
-        proposedRateInput.disabled = true;
-        loanTenureInput.disabled = true;
-        proposedRateInput.value = "";
-        loanTenureInput.value = "";
-        state.proposedRate = null;
-        state.loanTenure = null;
-        if (tenureYearsPreview) {
-            tenureYearsPreview.textContent = "";
-            tenureYearsPreview.classList.add("hidden");
-        }
+        // Section 2 stays enabled and functional
+        enableStep2();
     }
 
     // ------------------------------------------------------------
     // STEP 3 CONTROLS: OBLIGATION DETAILS
     // ------------------------------------------------------------
     function updateStep3State() {
-        const step2Valid = state.selectedLender !== null &&
-            state.proposedRate !== null && state.proposedRate >= 0 &&
-            state.loanTenure !== null && state.loanTenure > 0;
-
-        if (step2Valid) {
-            enableStep3();
-        } else {
-            disableStep3();
-        }
+        enableStep3();
     }
 
     function enableStep3() {
         step3Card.classList.remove("disabled");
-        step3Lock.textContent = "✓ Active";
-        step3Lock.className = "step-lock-tag active";
+        if (step3Lock) {
+            step3Lock.textContent = "";
+            step3Lock.className = "hidden";
+        }
 
         if (addCcBtn) addCcBtn.disabled = false;
         if (addEmiBtn) addEmiBtn.disabled = false;
@@ -889,19 +1189,8 @@
     }
 
     function disableStep3() {
-        step3Card.classList.add("disabled");
-        step3Lock.textContent = "Locked";
-        step3Lock.className = "step-lock-tag";
-
-        if (addCcBtn) addCcBtn.disabled = true;
-        if (addEmiBtn) addEmiBtn.disabled = true;
-
-        if (ccRowsList) {
-            ccRowsList.querySelectorAll("input, button").forEach(el => el.disabled = true);
-        }
-        if (emiRowsList) {
-            emiRowsList.querySelectorAll("input, button").forEach(el => el.disabled = true);
-        }
+        // Section 3 stays enabled and functional
+        enableStep3();
     }
 
     // ------------------------------------------------------------
@@ -932,7 +1221,7 @@
         row.className = "obligation-row";
         row.dataset.id = String(item.id);
 
-        const isCardDisabled = step3Card ? step3Card.classList.contains("disabled") : true;
+        const isCardDisabled = false;
 
         // 1. Amount input
         const inputWrap = document.createElement("div");
@@ -1099,8 +1388,7 @@
     // ------------------------------------------------------------
     function updateStep4State() {
         const step1Valid = state.monthlySalary !== null && state.monthlySalary > 0 &&
-            state.companyName && state.companyName.trim().length >= 2 &&
-            state.selectedLender !== null;
+            state.companyName && state.companyName.trim().length >= 2;
 
         const step2Valid = state.proposedRate !== null && state.proposedRate >= 0 &&
             state.loanTenure !== null && state.loanTenure > 0;
@@ -1110,67 +1398,32 @@
 
         const allValid = step1Valid && step2Valid && step3Valid;
 
-        checkFoirBtn.disabled = !allValid;
+        checkFoirBtn.disabled = false;
 
         if (allValid) {
-            actionHint.textContent = "Ready to execute real-time FOIR underwriting calculation";
+            actionHint.textContent = "Click to evaluate FOIR and calculate eligible loan sanction";
             actionHint.style.color = "#059669";
+        } else if (state.companyName && (!state.monthlySalary || state.monthlySalary <= 0)) {
+            actionHint.textContent = `Lenders shown for "${state.companyName}". Enter net monthly salary above, then click to check eligibility`;
+            actionHint.style.color = "#2563eb";
+        } else if (state.monthlySalary && state.companyName) {
+            actionHint.textContent = "Enter loan interest rate and facility tenor above to evaluate eligibility";
+            actionHint.style.color = "#2563eb";
         } else {
-            actionHint.textContent = "Complete all verification steps above to execute credit underwriting";
+            actionHint.textContent = "Enter company name above to view available lenders and evaluate credit eligibility";
             actionHint.style.color = "#64748b";
         }
     }
 
     // ------------------------------------------------------------
-    // STEP 4 CALCULATION: ON CHECK FOIR CLICKED
+    // STEP 4 UNDERWRITING CALCULATION ENGINE
     // ------------------------------------------------------------
-    async function onCheckFoirClicked() {
-        let hasError = false;
-
-        if (!nameInput.value.trim()) {
-            nameError.textContent = "Customer legal name is required";
-            hasError = true;
-        }
-
+    async function executeUnderwritingCalculation(autoScroll = false) {
+        if (!state.selectedLender) return;
         if (state.monthlySalary === null || state.monthlySalary <= 0) {
-            salaryError.textContent = "Enter a valid net monthly salary";
-            hasError = true;
+            hideResults();
+            return;
         }
-
-        if (!state.companyName || state.companyName.trim().length < 2) {
-            companyError.textContent = "Enter a valid employer / corporate entity";
-            hasError = true;
-        }
-
-        if (!state.selectedLender) {
-            lenderSelectError.textContent = "Please select an eligible lending partner from the table";
-            hasError = true;
-        }
-
-        if (state.proposedRate === null || state.proposedRate < 0) {
-            rateError.textContent = "Enter a valid interest rate";
-            hasError = true;
-        }
-
-        if (state.loanTenure === null || state.loanTenure <= 0) {
-            tenureError.textContent = "Enter a valid loan tenor";
-            hasError = true;
-        }
-
-        if (state.ccObligations === null || state.ccObligations < 0) {
-            ccError.textContent = "Enter credit card obligations (0 if none)";
-            hasError = true;
-        }
-
-        if (state.emiObligations === null || state.emiObligations < 0) {
-            emiError.textContent = "Enter existing EMI obligations (0 if none)";
-            hasError = true;
-        }
-
-        if (hasError) return;
-
-        checkFoirBtn.disabled = true;
-        checkFoirBtn.querySelector(".btn-text").textContent = "Underwriting in Progress...";
 
         try {
             const payload = {
@@ -1207,17 +1460,110 @@
 
             if (response.ok) {
                 const data = await response.json();
-                displayResults(data);
+                displayResults(data, autoScroll);
             } else {
                 const clientCalc = calculateEligibilityClientSide();
-                displayResults(clientCalc);
+                displayResults(clientCalc, autoScroll);
             }
         } catch (_err) {
             const clientCalc = calculateEligibilityClientSide();
-            displayResults(clientCalc);
+            displayResults(clientCalc, autoScroll);
+        }
+    }
+
+    // ------------------------------------------------------------
+    // STEP 4 CALCULATION: ON CHECK FOIR CLICKED
+    // ------------------------------------------------------------
+    async function onCheckFoirClicked() {
+        let hasError = false;
+
+        if (!nameInput.value.trim()) {
+            nameError.textContent = "Customer legal name is required";
+            if (!hasError) nameInput.focus();
+            hasError = true;
+        } else {
+            nameError.textContent = "";
+        }
+
+        if (!state.companyName || state.companyName.trim().length < 2) {
+            companyError.textContent = "Enter a valid employer / corporate entity";
+            if (!hasError) companyInput.focus();
+            hasError = true;
+        } else {
+            companyError.textContent = "";
+        }
+
+        if (state.monthlySalary === null || state.monthlySalary <= 0) {
+            salaryError.textContent = "Enter a valid net monthly salary";
+            if (!hasError) salaryInput.focus();
+            hasError = true;
+        } else {
+            salaryError.textContent = "";
+        }
+
+        if (state.proposedRate === null || state.proposedRate < 0) {
+            rateError.textContent = "Enter a valid interest rate";
+            if (!hasError) proposedRateInput.focus();
+            hasError = true;
+        } else {
+            rateError.textContent = "";
+        }
+
+        if (state.loanTenure === null || state.loanTenure <= 0) {
+            tenureError.textContent = "Enter a valid loan tenor";
+            if (!hasError) loanTenureInput.focus();
+            hasError = true;
+        } else {
+            tenureError.textContent = "";
+        }
+
+        if (state.ccObligations === null || state.ccObligations < 0) {
+            ccError.textContent = "Enter credit card obligations (0 if none)";
+            hasError = true;
+        } else {
+            ccError.textContent = "";
+        }
+
+        if (state.emiObligations === null || state.emiObligations < 0) {
+            emiError.textContent = "Enter existing EMI obligations (0 if none)";
+            hasError = true;
+        } else {
+            emiError.textContent = "";
+        }
+
+        if (hasError) return;
+
+        checkFoirBtn.disabled = true;
+        checkFoirBtn.querySelector(".btn-text").textContent = "Checking Eligibility & Matching Lenders...";
+
+        try {
+            state.isEligibilityEvaluated = true;
+            if (lendersTable) lendersTable.classList.remove("company-only-mode");
+
+            // Show lenders section now that the button was clicked
+            if (lendersSection) lendersSection.classList.remove("hidden");
+            if (emptyLendersPrompt) emptyLendersPrompt.classList.add("hidden");
+            lendersLoading.classList.remove("hidden");
+            lendersNotFound.classList.add("hidden");
+            lendersTableContainer.classList.add("hidden");
+            lenderCountBadge.textContent = "Matching...";
+
+            const lenders = await fetchTopEligibleLenders(state.companyName.trim());
+
+            if (lenders && lenders.length > 0) {
+                if (lendersTable) lendersTable.classList.remove("company-only-mode");
+                // Auto-select the top eligible lender
+                const idx = (state.selectedLenderIndex >= 0 && state.selectedLenderIndex < lenders.length) 
+                    ? state.selectedLenderIndex 
+                    : 0;
+                selectLender(idx, true);
+            } else {
+                hideResults();
+            }
         } finally {
             checkFoirBtn.disabled = false;
-            checkFoirBtn.querySelector(".btn-text").textContent = "Evaluate FOIR & Credit Eligibility";
+            checkFoirBtn.querySelector(".btn-text").textContent = "Check FOIR & Credit Eligibility";
+            updateStep4State();
         }
     }
 
@@ -1271,7 +1617,7 @@
     // ------------------------------------------------------------
     // DISPLAY RESULTS & UPDATE FINANCIAL SUMMARY
     // ------------------------------------------------------------
-    function displayResults(data) {
+    function displayResults(data, autoScroll = false) {
         const lender = state.selectedLender;
         const foirVal = data.currentFoir !== undefined ? data.currentFoir : 0;
         const maxLoanVal = data.maxLoanAmount !== undefined ? data.maxLoanAmount : 0;
@@ -1289,35 +1635,75 @@
             evaluationTimestamp.textContent = new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
         }
 
-        // Display 1: Current FOIR
-        resultCurrentFoir.textContent = `${foirVal}%`;
+        // Total Allowed FOIR Amount = Monthly Salary * (Policy FOIR % / 100)
+        const salary = state.monthlySalary || 0;
+        const policyFoirPercent = Number(lender?.foir) || 70;
+        const totalAllowedFoir = Math.round(salary * (policyFoirPercent / 100));
 
-        // FOIR Bar and Badge
-        if (foirBarFill) {
-            foirBarFill.style.width = `${Math.min(100, foirVal)}%`;
+        // 1. Available EMI Card (Top)
+        if (resultAvailableEmi) {
+            resultAvailableEmi.textContent = `₹${Math.round(availableEmiVal).toLocaleString("en-IN")}`;
+        }
+        if (resultEmiStatusTag && resultEmiStatusText) {
+            if (foirVal <= 50) {
+                resultEmiStatusTag.className = "status-pill good";
+                resultEmiStatusText.textContent = "Good";
+            } else if (foirVal <= 65) {
+                resultEmiStatusTag.className = "status-pill moderate";
+                resultEmiStatusText.textContent = "Moderate";
+            } else {
+                resultEmiStatusTag.className = "status-pill strained";
+                resultEmiStatusText.textContent = "High";
+            }
         }
 
-        if (foirVal <= 50) {
-            resultFoirBadge.textContent = "Safe FOIR (< 50%)";
-            resultFoirBadge.className = "metric-tag normal";
-            if (foirBarFill) foirBarFill.style.backgroundColor = "#10b981";
-        } else if (foirVal <= 65) {
-            resultFoirBadge.textContent = "Moderate (50-65%)";
-            resultFoirBadge.className = "metric-tag high";
-            if (foirBarFill) foirBarFill.style.backgroundColor = "#f59e0b";
-        } else {
-            resultFoirBadge.textContent = "Strained (> 65%)";
-            resultFoirBadge.className = "metric-tag critical";
-            if (foirBarFill) foirBarFill.style.backgroundColor = "#f43f5e";
+        // 2. Max Loan Amount Card (Middle)
+        if (resultMaxLoan) {
+            resultMaxLoan.textContent = `₹${Math.round(finalLoanVal).toLocaleString("en-IN")}`;
+        }
+        if (resultLoanTenureSubtext) {
+            const tenureMonths = state.loanTenure || 48;
+            resultLoanTenureSubtext.textContent = `Estimated for ${tenureMonths} months tenure`;
         }
 
-        // Display 2 & 3: Loan Amount (Editable) and Available EMI
-        finalLoanAmountInput.value = finalLoanVal > 0 ? finalLoanVal : "";
-        resultMaxLoanCap.textContent = `Max eligible: ₹ ${maxLoanVal.toLocaleString("en-IN")}`;
-        resetToMaxLoanBtn.classList.add("hidden");
-        loanAmountWarning.classList.add("hidden");
+        // 3. Total FOIR Amount Card (Bottom)
+        if (resultTotalFoirAmount) {
+            resultTotalFoirAmount.textContent = `₹${Math.round(totalAllowedFoir).toLocaleString("en-IN")}`;
+        }
+        if (resultFoirLimitText) {
+            resultFoirLimitText.textContent = `${Math.round(foirVal)}% Limit`;
+        }
+        if (resultFoirProgressBar) {
+            resultFoirProgressBar.style.width = `${Math.min(100, Math.round(foirVal))}%`;
+            if (foirVal <= 50) {
+                resultFoirProgressBar.style.backgroundColor = "#2563eb";
+            } else if (foirVal <= 65) {
+                resultFoirProgressBar.style.backgroundColor = "#f59e0b";
+            } else {
+                resultFoirProgressBar.style.backgroundColor = "#ef4444";
+            }
+        }
 
-        updateEmiDisplay(availableEmiVal, finalLoanVal, maxLoanVal, maxAvailableEmiVal);
+        // Compatibility updates for legacy elements
+        if (resultCurrentFoir) resultCurrentFoir.textContent = `${foirVal}%`;
+        if (foirBarFill) foirBarFill.style.width = `${Math.min(100, foirVal)}%`;
+        if (resultFoirBadge) {
+            if (foirVal <= 50) {
+                resultFoirBadge.textContent = "Safe FOIR (< 50%)";
+                resultFoirBadge.className = "metric-tag normal";
+            } else if (foirVal <= 65) {
+                resultFoirBadge.textContent = "Moderate (50-65%)";
+                resultFoirBadge.className = "metric-tag high";
+            } else {
+                resultFoirBadge.textContent = "Strained (> 65%)";
+                resultFoirBadge.className = "metric-tag critical";
+            }
+        }
+        if (finalLoanAmountInput) finalLoanAmountInput.value = finalLoanVal > 0 ? finalLoanVal : "";
+        if (resultMaxLoanCap) resultMaxLoanCap.textContent = `Max eligible: ₹ ${maxLoanVal.toLocaleString("en-IN")}`;
+        if (resetToMaxLoanBtn) resetToMaxLoanBtn.classList.add("hidden");
+        if (loanAmountWarning) loanAmountWarning.classList.add("hidden");
+        if (resultEmiDesc) updateEmiDisplay(availableEmiVal, finalLoanVal, maxLoanVal, maxAvailableEmiVal);
 
         // Lender pill info
         const catText = lender.cat ? ` | Tier: ${lender.cat}` : "";
@@ -1355,32 +1741,28 @@
         if (terminalIntroCard) terminalIntroCard.classList.add("hidden");
         resultCard.classList.remove("hidden");
 
-        // Automatically navigate and focus directly on output results
-        scrollToOutput();
+        // Automatically navigate and focus directly on output results ONLY if autoScroll is true
+        if (autoScroll) {
+            scrollToOutput();
+        }
     }
 
     function scrollToOutput() {
         if (!resultCard) return;
         requestAnimationFrame(() => {
-            const topbar = document.querySelector(".topbar");
-            const topbarHeight = topbar ? topbar.offsetHeight : 60;
-            const rect = resultCard.getBoundingClientRect();
-            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-            const targetY = Math.max(0, scrollTop + rect.top - topbarHeight - 16);
+            // Only scroll window on small/mobile screens where the results terminal is stacked underneath
+            if (window.innerWidth <= 992) {
+                const topbar = document.querySelector(".topbar");
+                const topbarHeight = topbar ? topbar.offsetHeight : 60;
+                const rect = resultCard.getBoundingClientRect();
+                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                const targetY = Math.max(0, scrollTop + rect.top - topbarHeight - 16);
 
-            window.scrollTo({
-                top: targetY,
-                behavior: "smooth"
-            });
-
-            // Trigger visual glow pulse highlight
-            resultCard.classList.remove("result-highlight-pulse");
-            void resultCard.offsetWidth; // Force DOM reflow
-            resultCard.classList.add("result-highlight-pulse");
-
-            setTimeout(() => {
-                if (resultCard) resultCard.classList.remove("result-highlight-pulse");
-            }, 2200);
+                window.scrollTo({
+                    top: targetY,
+                    behavior: "smooth"
+                });
+            }
         });
     }
 
