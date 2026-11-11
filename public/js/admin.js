@@ -1342,7 +1342,12 @@ async function performCsvImport() {
         );
 
         uploadDialog.close();
-        setMessage(adminMessage, response.message, "success");
+        let displayMsg = response.message;
+        if (response.summary && Array.isArray(response.summary.changedSamples) && response.summary.changedSamples.length > 0) {
+            const sampleText = response.summary.changedSamples.slice(0, 3).map(s => `${s.company} (${s.oldCategory} → ${s.newCategory})`).join(", ");
+            displayMsg += ` (e.g. ${sampleText}${response.summary.changedSamples.length > 3 ? '...' : ''})`;
+        }
+        setMessage(adminMessage, displayMsg, "success");
 
         const targetBank = defaultBank || (response.summary?.banks?.[0] || "");
         await Promise.all([

@@ -164,6 +164,20 @@
         enableStep3();
         renderCcRows();
         renderEmiRows();
+
+        if (proposedRateInput && !proposedRateInput.value) {
+            proposedRateInput.value = "12";
+            state.proposedRate = 12;
+        }
+        if (loanTenureInput && !loanTenureInput.value) {
+            loanTenureInput.value = "48";
+            state.loanTenure = 48;
+            if (tenureYearsPreview) {
+                tenureYearsPreview.textContent = "4.0 Years";
+                tenureYearsPreview.classList.remove("hidden");
+            }
+        }
+
         setupEventListeners();
         disableNumberInputWheelScroll();
         if (lendersSection) {
@@ -211,20 +225,26 @@
             if (!isNaN(val) && val > 0) {
                 state.monthlySalary = val;
                 salaryError.textContent = "";
+                state.isEligibilityEvaluated = true;
+                if (lendersTable) lendersTable.classList.remove("company-only-mode");
             } else {
                 state.monthlySalary = null;
+                state.isEligibilityEvaluated = false;
+                if (lendersTable) lendersTable.classList.add("company-only-mode");
             }
             updateStep4State();
 
-            // When salary is entered or updated and company is present, query lenders
+            // When salary is entered or updated and company is present, query lenders and update calculations
             if (state.companyName && state.companyName.trim().length >= 2) {
                 clearTimeout(salaryRefreshTimer);
                 salaryRefreshTimer = setTimeout(() => {
                     fetchCompanyLenders(state.companyName.trim());
-                    if (resultCard && !resultCard.classList.contains("hidden") && state.selectedLender && state.isEligibilityEvaluated) {
+                    if (resultCard && !resultCard.classList.contains("hidden") && state.selectedLender) {
                         executeUnderwritingCalculation();
                     }
-                }, 350);
+                }, 300);
+            } else if (state.lenders && state.lenders.length > 0) {
+                renderLendersTable(state.lenders);
             }
         });
 
@@ -233,8 +253,16 @@
             const query = companyInput.value.trim();
             state.companyName = query;
             companyError.textContent = "";
-            state.isEligibilityEvaluated = false; // Reset to lenders list only
-            if (lendersTable) lendersTable.classList.add("company-only-mode");
+
+            const hasSalary = state.monthlySalary !== null && state.monthlySalary > 0;
+            state.isEligibilityEvaluated = hasSalary;
+            if (lendersTable) {
+                if (hasSalary) {
+                    lendersTable.classList.remove("company-only-mode");
+                } else {
+                    lendersTable.classList.add("company-only-mode");
+                }
+            }
 
             clearTimeout(companySearchTimer);
             if (query.length < 1) {
@@ -252,7 +280,7 @@
             if (query.length >= 2) {
                 lenderFetchTimer = setTimeout(() => {
                     fetchCompanyLenders(query);
-                }, 350);
+                }, 300);
             } else {
                 onCompanyCleared();
             }
@@ -325,7 +353,13 @@
                 state.proposedRate = val;
                 rateError.textContent = "";
             } else {
-                state.proposedRate = null;
+                state.proposedRate = 12;
+            }
+            if (state.lenders && state.lenders.length > 0 && state.monthlySalary && state.monthlySalary > 0) {
+                renderLendersTable(state.lenders);
+            }
+            if (resultCard && !resultCard.classList.contains("hidden") && state.selectedLender) {
+                executeUnderwritingCalculation();
             }
             updateStep3State();
             updateStep4State();
@@ -342,11 +376,17 @@
                     tenureYearsPreview.classList.remove("hidden");
                 }
             } else {
-                state.loanTenure = null;
+                state.loanTenure = 48;
                 if (tenureYearsPreview) {
                     tenureYearsPreview.textContent = "";
                     tenureYearsPreview.classList.add("hidden");
                 }
+            }
+            if (state.lenders && state.lenders.length > 0 && state.monthlySalary && state.monthlySalary > 0) {
+                renderLendersTable(state.lenders);
+            }
+            if (resultCard && !resultCard.classList.contains("hidden") && state.selectedLender) {
+                executeUnderwritingCalculation();
             }
             updateStep3State();
             updateStep4State();
@@ -569,8 +609,16 @@
         companyInput.value = name;
         state.companyName = name;
         companyError.textContent = "";
-        state.isEligibilityEvaluated = false; // Reset to lenders list only
-        if (lendersTable) lendersTable.classList.add("company-only-mode");
+
+        const hasSalary = state.monthlySalary !== null && state.monthlySalary > 0;
+        state.isEligibilityEvaluated = hasSalary;
+        if (lendersTable) {
+            if (hasSalary) {
+                lendersTable.classList.remove("company-only-mode");
+            } else {
+                lendersTable.classList.add("company-only-mode");
+            }
+        }
         hideCompanySuggestions();
         fetchCompanyLenders(name);
     }
@@ -655,11 +703,12 @@
 
         const lenders = await fetchTopEligibleLenders(companyName.trim());
 
+        const hasSalary = state.monthlySalary !== null && state.monthlySalary > 0;
         if (lenderSelectionHint) {
-            if (state.isEligibilityEvaluated) {
+            if (hasSalary || state.isEligibilityEvaluated) {
                 lenderSelectionHint.textContent = `Commercial lenders evaluated for "${companyName}". Select any bank to inspect underwriting terms.`;
             } else {
-                lenderSelectionHint.textContent = `Available lenders mapped for "${companyName}". Complete your details and click "Check FOIR & Credit Eligibility" to compute policy limits.`;
+                lenderSelectionHint.textContent = `Available lenders & categories mapped for "${companyName}". Enter net monthly salary above to calculate FOIR % and loan amount.`;
             }
         }
 
@@ -734,20 +783,9 @@
         lendersTableContainer.classList.add("hidden");
         lendersNotFound.classList.remove("hidden");
 
-        const hasSalary = state.monthlySalary !== null && state.monthlySalary > 0;
-        if (!hasSalary) {
-            if (lendersNotFoundTitle) lendersNotFoundTitle.textContent = "Please Enter Net Monthly Salary";
-            lendersNotFoundMessage.textContent = `Please enter your net monthly salary above to check available lenders for "${state.companyName}".`;
-            lenderCountBadge.textContent = "Please Enter Salary";
-            if (actionHint) {
-                actionHint.textContent = `Please enter net monthly salary to evaluate lenders for "${state.companyName}"`;
-                actionHint.style.color = "#d97706";
-            }
-        } else {
-            if (lendersNotFoundTitle) lendersNotFoundTitle.textContent = title || "No Eligible Lenders Found";
-            lendersNotFoundMessage.textContent = msg;
-            lenderCountBadge.textContent = "0 Lenders";
-        }
+        if (lendersNotFoundTitle) lendersNotFoundTitle.textContent = title || "No Eligible Lenders Found";
+        lendersNotFoundMessage.textContent = msg || `No active commercial lenders mapped for "${state.companyName}".`;
+        lenderCountBadge.textContent = "0 Lenders";
     }
 
     // ------------------------------------------------------------
@@ -829,8 +867,9 @@
         if (emptyLendersPrompt) emptyLendersPrompt.classList.add("hidden");
         lendersTableContainer.classList.remove("hidden");
 
+        const hasSalary = state.monthlySalary !== null && state.monthlySalary > 0;
         if (lendersTable) {
-            if (state.isEligibilityEvaluated) {
+            if (hasSalary || state.isEligibilityEvaluated) {
                 lendersTable.classList.remove("company-only-mode");
                 lenderCountBadge.textContent = `${lenders.length} ${lenders.length === 1 ? 'Lender' : 'Lenders'}`;
             } else {
@@ -1349,6 +1388,13 @@
                 ccBtSummary.classList.add("hidden");
             }
         }
+
+        if (state.lenders && state.lenders.length > 0 && state.monthlySalary && state.monthlySalary > 0) {
+            renderLendersTable(state.lenders);
+        }
+        if (resultCard && !resultCard.classList.contains("hidden") && state.selectedLender) {
+            executeUnderwritingCalculation();
+        }
     }
 
     function updateEmiTotals() {
@@ -1381,33 +1427,32 @@
                 emiBtSummary.classList.add("hidden");
             }
         }
+
+        if (state.lenders && state.lenders.length > 0 && state.monthlySalary && state.monthlySalary > 0) {
+            renderLendersTable(state.lenders);
+        }
+        if (resultCard && !resultCard.classList.contains("hidden") && state.selectedLender) {
+            executeUnderwritingCalculation();
+        }
     }
 
     // ------------------------------------------------------------
     // STEP 4 CONTROLS: CHECK FOIR BUTTON STATE
     // ------------------------------------------------------------
     function updateStep4State() {
-        const step1Valid = state.monthlySalary !== null && state.monthlySalary > 0 &&
-            state.companyName && state.companyName.trim().length >= 2;
-
-        const step2Valid = state.proposedRate !== null && state.proposedRate >= 0 &&
-            state.loanTenure !== null && state.loanTenure > 0;
-
-        const step3Valid = state.ccObligations !== null && state.ccObligations >= 0 &&
-            state.emiObligations !== null && state.emiObligations >= 0;
-
-        const allValid = step1Valid && step2Valid && step3Valid;
+        const hasCompany = Boolean(state.companyName && state.companyName.trim().length >= 2);
+        const hasSalary = Boolean(state.monthlySalary !== null && state.monthlySalary > 0);
 
         checkFoirBtn.disabled = false;
 
-        if (allValid) {
+        if (hasCompany && hasSalary) {
             actionHint.textContent = "Click to evaluate FOIR and calculate eligible loan sanction";
             actionHint.style.color = "#059669";
-        } else if (state.companyName && (!state.monthlySalary || state.monthlySalary <= 0)) {
-            actionHint.textContent = `Lenders shown for "${state.companyName}". Enter net monthly salary above, then click to check eligibility`;
+        } else if (hasCompany && !hasSalary) {
+            actionHint.textContent = `Lenders & categories shown for "${state.companyName}". Enter net monthly salary above to calculate loan amount`;
             actionHint.style.color = "#2563eb";
-        } else if (state.monthlySalary && state.companyName) {
-            actionHint.textContent = "Enter loan interest rate and facility tenor above to evaluate eligibility";
+        } else if (hasSalary && !hasCompany) {
+            actionHint.textContent = "Enter employer / corporate entity above to match eligible lenders";
             actionHint.style.color = "#2563eb";
         } else {
             actionHint.textContent = "Enter company name above to view available lenders and evaluate credit eligibility";
@@ -1427,12 +1472,12 @@
 
         try {
             const payload = {
-                customerName: nameInput.value.trim(),
+                customerName: (nameInput.value && nameInput.value.trim()) || "Applicant",
                 companyName: state.companyName.trim(),
                 salary: state.monthlySalary,
                 income: state.monthlySalary,
-                annualRate: state.proposedRate,
-                months: state.loanTenure,
+                annualRate: (state.proposedRate !== null && state.proposedRate > 0) ? state.proposedRate : 12,
+                months: (state.loanTenure !== null && state.loanTenure > 0) ? state.loanTenure : 48,
                 selectedLender: {
                     bank_name: state.selectedLender.bank_name,
                     cat: state.selectedLender.cat || "",
@@ -1440,13 +1485,13 @@
                     cc_obligation_percent: Number(state.selectedLender.cc_obligation_percent) || 5
                 },
                 hasHomeLoan: Boolean(state.hasHomeLoan),
-                creditCardObligations: state.ccObligations,
-                existingEmiObligations: state.emiObligations,
-                creditCards: state.creditCardsList.map(c => ({
+                creditCardObligations: state.ccObligations || 0,
+                existingEmiObligations: state.emiObligations || 0,
+                creditCards: (state.creditCardsList || []).map(c => ({
                     outstanding: Number(c.amount) || 0,
                     balanceTransfer: Boolean(c.isBt)
                 })),
-                loans: state.loanEmisList.map(l => ({
+                loans: (state.loanEmisList || []).map(l => ({
                     monthlyEmi: Number(l.amount) || 0,
                     balanceTransfer: Boolean(l.isBt)
                 }))
@@ -1475,63 +1520,47 @@
     // STEP 4 CALCULATION: ON CHECK FOIR CLICKED
     // ------------------------------------------------------------
     async function onCheckFoirClicked() {
-        let hasError = false;
-
-        if (!nameInput.value.trim()) {
-            nameError.textContent = "Customer legal name is required";
-            if (!hasError) nameInput.focus();
-            hasError = true;
-        } else {
-            nameError.textContent = "";
-        }
+        // Clear non-critical error messages
+        nameError.textContent = "";
+        companyError.textContent = "";
+        salaryError.textContent = "";
+        rateError.textContent = "";
+        tenureError.textContent = "";
+        ccError.textContent = "";
+        emiError.textContent = "";
 
         if (!state.companyName || state.companyName.trim().length < 2) {
-            companyError.textContent = "Enter a valid employer / corporate entity";
-            if (!hasError) companyInput.focus();
-            hasError = true;
-        } else {
-            companyError.textContent = "";
+            companyError.textContent = "Please enter or select an employer / corporate entity";
+            if (companyInput) companyInput.focus();
+            return;
         }
 
         if (state.monthlySalary === null || state.monthlySalary <= 0) {
-            salaryError.textContent = "Enter a valid net monthly salary";
-            if (!hasError) salaryInput.focus();
-            hasError = true;
-        } else {
-            salaryError.textContent = "";
+            salaryError.textContent = "Please enter net monthly salary to evaluate loan limits";
+            if (salaryInput) salaryInput.focus();
+            return;
         }
 
-        if (state.proposedRate === null || state.proposedRate < 0) {
-            rateError.textContent = "Enter a valid interest rate";
-            if (!hasError) proposedRateInput.focus();
-            hasError = true;
-        } else {
-            rateError.textContent = "";
+        // Apply sensible fallbacks for all optional fields
+        state.customerName = (nameInput.value && nameInput.value.trim()) || "Applicant";
+
+        if (state.proposedRate === null || state.proposedRate <= 0) {
+            state.proposedRate = 12.0;
+            if (proposedRateInput) proposedRateInput.value = "12";
         }
 
         if (state.loanTenure === null || state.loanTenure <= 0) {
-            tenureError.textContent = "Enter a valid loan tenor";
-            if (!hasError) loanTenureInput.focus();
-            hasError = true;
-        } else {
-            tenureError.textContent = "";
+            state.loanTenure = 48;
+            if (loanTenureInput) loanTenureInput.value = "48";
         }
 
         if (state.ccObligations === null || state.ccObligations < 0) {
-            ccError.textContent = "Enter credit card obligations (0 if none)";
-            hasError = true;
-        } else {
-            ccError.textContent = "";
+            state.ccObligations = 0;
         }
 
         if (state.emiObligations === null || state.emiObligations < 0) {
-            emiError.textContent = "Enter existing EMI obligations (0 if none)";
-            hasError = true;
-        } else {
-            emiError.textContent = "";
+            state.emiObligations = 0;
         }
-
-        if (hasError) return;
 
         checkFoirBtn.disabled = true;
         checkFoirBtn.querySelector(".btn-text").textContent = "Checking Eligibility & Matching Lenders...";
@@ -1585,8 +1614,8 @@
         const availableEmi = Math.round(Math.max(0, maxAllowedEmi - totalObligations));
 
         // 3. Maximum Eligible Loan Amount
-        const rate = state.proposedRate;
-        const tenure = state.loanTenure;
+        const rate = (state.proposedRate !== null && state.proposedRate > 0) ? state.proposedRate : 12;
+        const tenure = (state.loanTenure !== null && state.loanTenure > 0) ? state.loanTenure : 48;
         let emiPerLakh = 0;
 
         if (rate === 0) {

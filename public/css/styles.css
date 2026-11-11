@@ -1569,17 +1569,25 @@ input:disabled {
     vertical-align: middle;
 }
 
-/* Company-Only Discovery Mode (Before Check FOIR is Clicked) */
-/* Hides Category, FOIR, Upto Loan Amount, ROI, Tenure, and Action columns */
-.lenders-table.company-only-mode thead th:not(.col-lender),
-.lenders-table.company-only-mode tbody td:not(.col-lender) {
+/* Company-Only Discovery Mode (When Company is entered without salary) */
+/* Shows ONLY Lender Name and Category; hides FOIR, Loan Amount, ROI, Tenure, and Action columns */
+.lenders-table.company-only-mode thead th:not(.col-lender):not(.col-cat),
+.lenders-table.company-only-mode tbody td:not(.col-lender):not(.col-cat) {
     display: none !important;
 }
 
 .lenders-table.company-only-mode thead th.col-lender,
 .lenders-table.company-only-mode tbody td.col-lender {
-    width: 100% !important;
-    min-width: 0 !important;
+    width: 70% !important;
+    min-width: 220px !important;
+}
+
+.lenders-table.company-only-mode thead th.col-cat,
+.lenders-table.company-only-mode tbody td.col-cat {
+    width: 30% !important;
+    min-width: 120px !important;
+    text-align: right !important;
+    padding-right: 20px !important;
 }
 
 .lenders-table.company-only-mode tbody tr {
@@ -1587,7 +1595,7 @@ input:disabled {
 }
 
 .lenders-table.company-only-mode .bank-cell {
-    padding: 4px 0;
+    padding: 6px 0;
 }
 
 .col-lender {
