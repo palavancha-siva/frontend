@@ -38,6 +38,16 @@ module.exports = {
       '@': path.resolve(__dirname, 'src'),
     },
   },
+  optimization: {
+    splitChunks: {
+      chunks: 'all',
+    },
+  },
+  performance: {
+    maxAssetSize: 512000,
+    maxEntrypointSize: 512000,
+    hints: false,
+  },
   plugins: [
     new HtmlWebpackPlugin({
       template: path.resolve(__dirname, 'public/index.html'),
